@@ -1,6 +1,8 @@
-# Raw / large data stays local, never pushed to GitHub
-*.csv
-*.parquet
+# Large raw/source data and superseded drafts stay local, never pushed to GitHub
+/LCL_2013.csv
+/storage-heater-vpp-ha_Old/
+/nightdial-repo/
+/04_Full_Project_Source/storage-heater-vpp-ha.zip
 
 # Python
 __pycache__/

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>AutoMagic — Storage Heater Advisor</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQXV0b01hZ2ljIiwic2hvcnRfbmFtZSI6IkF1dG9NYWdpYyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIn0=">
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --text: #1a2733;
+    --text-dim: #5b6b78;
+    --accent: #2b5d8c;
+    --accent-2: #e67e22;
+    --border: #e1e6ea;
+    --dial-track: #dfe6ec;
+    --dial-face: #ffffff;
+    --shadow: 0 2px 12px rgba(20,30,40,0.08);
+    --index-1: #4a90d9;
+    --index-2: #5db67a;
+    --index-3: #a3c93c;
+    --index-4: #e0b93c;
+    --index-5: #e07b3c;
+    --index-6: #d94a4a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14191e;
+      --card-bg: #1e2530;
+      --text: #eef2f5;
+      --text-dim: #9aa7b2;
+      --accent: #6fa8d8;
+      --accent-2: #f0a15c;
+      --border: #2c3742;
+      --dial-track: #2c3742;
+      --dial-face: #232b36;
+      --shadow: 0 2px 16px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14191e; --card-bg: #1e2530; --text: #eef2f5; --text-dim: #9aa7b2;
+    --accent: #6fa8d8; --accent-2: #f0a15c; --border: #2c3742; --dial-track: #2c3742;
+    --dial-face: #232b36; --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center;
+  }
+  .app { width: 100%; max-width: 420px; padding: 20px 16px 40px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .brand { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; }
+  .brand span { color: var(--accent-2); }
+  .badge { font-size: 0.68rem; color: var(--text-dim); border: 1px solid var(--border); border-radius: 20px; padding: 2px 9px; }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin: 2px 0 18px; }
+
+  .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 14px; }
+  .date-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .date-row button { background: var(--dial-track); border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 1.1rem; color: var(--text); cursor: pointer; }
+  .date-row button:active { transform: scale(0.94); }
+  .date-label { text-align: center; }
+  .date-label .day { font-size: 0.95rem; font-weight: 600; }
+  .date-label .year-note { font-size: 0.68rem; color: var(--text-dim); }
+
+  .evening-note { text-align: center; font-size: 0.78rem; color: var(--accent-2); font-weight: 600; margin: 10px 0 2px; }
+
+  .dial-wrap { display: flex; justify-content: center; margin: 14px 0 6px; }
+  .dial-caption { text-align: center; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 4px; }
+  .dial-note { font-size: 0.78rem; color: var(--text-dim); text-align: center; line-height: 1.4; margin-top: 4px; }
+  .dial-note b { color: var(--text); }
+
+  .message-card { display: flex; gap: 10px; align-items: flex-start; }
+  .message-card .icon { font-size: 1.4rem; line-height: 1.3; }
+  .message-card p { margin: 0; font-size: 1rem; line-height: 1.45; }
+
+  .weather-row { display: flex; justify-content: space-around; text-align: center; }
+  .weather-item .val { font-size: 1.25rem; font-weight: 700; }
+  .weather-item .lbl { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .scrub { width: 100%; margin-top: 4px; accent-color: var(--accent); }
+
+  .footnote { font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-top: 18px; line-height: 1.5; }
+  .footnote b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">Auto<span>Magic</span></div>
+    <div class="badge">DEMO · 2013 replay</div>
+  </div>
+  <div class="subtitle">Real weather, real calibration — from the actual project data.</div>
+
+  <div class="card">
+    <div class="date-row">
+      <button id="prevBtn" aria-label="Previous day">‹</button>
+      <div class="date-label">
+        <div class="day" id="dayLabel">—</div>
+        <div class="year-note">tap ‹ › or drag the slider below</div>
+      </div>
+      <button id="nextBtn" aria-label="Next day">›</button>
+    </div>
+    <input type="range" class="scrub" id="scrub" min="0" max="364" value="14">
+  </div>
+
+  <div class="card">
+    <div class="evening-note">🕗 Tonight's charge — set by 20:00</div>
+    <div class="dial-caption">Input dial — how much heat to store overnight</div>
+    <div class="dial-wrap">
+      <svg id="dial" width="220" height="180" viewBox="0 0 220 180">
+        <!-- track arc (decorative only, static) -->
+        <path d="M 48.9 160.8 A 62 62 0 0 1 171.1 160.8" fill="none" stroke="var(--dial-track)" stroke-width="10" stroke-linecap="round"/>
+        <!-- tick marks + numbers, positions verified numerically (see evidence_map.md) -->
+        <g id="ticks"></g>
+        <!-- pointer, rotated via a plain verified transform, not custom trig -->
+        <g id="pointer">
+          <line x1="110" y1="150" x2="110" y2="90" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="110" cy="150" r="10" fill="var(--text)"/>
+        <text id="dialNumber" x="110" y="145" font-size="26" font-weight="800" text-anchor="middle" fill="var(--card-bg)"></text>
+      </svg>
+    </div>
+    <div class="dial-note">This changes every night with the forecast — that's the whole point of AutoMagic.</div>
+  </div>
+
+  <div class="card">
+    <div class="dial-caption">Output dial — how fast stored heat is released</div>
+    <div class="dial-wrap">
+      <svg id="dialOut" width="220" height="180" viewBox="0 0 220 180">
+        <path d="M 48.9 160.8 A 62 62 0 0 1 171.1 160.8" fill="none" stroke="var(--dial-track)" stroke-width="10" stroke-linecap="round"/>
+        <g id="ticksOut"></g>
+        <g id="pointerOut">
+          <line x1="110" y1="150" x2="110" y2="90" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="110" cy="150" r="10" fill="var(--text)"/>
+        <text id="dialNumberOut" x="110" y="145" font-size="26" font-weight="800" text-anchor="middle" fill="var(--card-bg)"></text>
+      </svg>
+    </div>
+    <div class="dial-note">Keep this low — <b>only turn it up if the room actually feels cold</b>. Always turn it down to its lowest number before bed, so tonight's stored heat isn't wasted overnight. This is general guidance, not a forecast — AutoMagic doesn't yet calculate a daily output setting.</div>
+  </div>
+
+  <div class="card message-card">
+    <div class="icon">💬</div>
+    <p id="nudgeMessage">—</p>
+  </div>
+
+  <div class="card">
+    <div class="weather-row">
+      <div class="weather-item"><div class="val" id="tempVal">—</div><div class="lbl">Temp (°C)</div></div>
+      <div class="weather-item"><div class="val" id="windVal">—</div><div class="lbl">Wind (km/h)</div></div>
+      <div class="weather-item"><div class="val" id="indexVal">—</div><div class="lbl">Dial Setting</div></div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Every number here comes from the real project pipeline replayed against actual 2013 London weather
+    for confirmed storage-heater households — <b>not</b> invented demo data.
+    <br>Real deployment would use tomorrow's forecast, not a historical replay.
+  </div>
+</div>
+
+<script>
+const DATA = __DATA_JSON__;
+
+const INDEX_COLORS = {1:'var(--index-1)',2:'var(--index-2)',3:'var(--index-3)',4:'var(--index-4)',5:'var(--index-5)',6:'var(--index-6)'};
+const INDEX_ICONS = {1:'🌤️',2:'⛅',3:'🌥️',4:'🌦️',5:'🌧️',6:'❄️'};
+
+// Dial geometry: 6 positions, matching the real physical dial numbering (1-6)
+// confirmed 2026-09-02 against a real housing association's Dimplex heater
+// tenant guide -- verified numerically in Python before use, same discipline
+// as the original 5-position version (see evidence_map.md).
+const PIVOT = {x: 110, y: 150};
+const N_POSITIONS = 6;
+function rotationForIndex(i) { return -100 + (i - 1) / (N_POSITIONS - 1) * 200; }
+function svgRotate(px, py, cx, cy, thetaDeg) {
+  const theta = thetaDeg * Math.PI / 180;
+  const dx = px - cx, dy = py - cy;
+  return {
+    x: cx + dx * Math.cos(theta) - dy * Math.sin(theta),
+    y: cy + dx * Math.sin(theta) + dy * Math.cos(theta),
+  };
+}
+
+function buildTicks(suffix) {
+  const g = document.getElementById('ticks' + suffix);
+  g.innerHTML = '';
+  for (let i = 1; i <= 6; i++) {
+    const rot = rotationForIndex(i);
+    const p = svgRotate(110, 150 - 78, PIVOT.x, PIVOT.y, rot);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y + 5);
+    t.setAttribute('id', 'tickNum' + suffix + i);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', '14');
+    t.setAttribute('font-weight', '700');
+    t.setAttribute('fill', 'var(--text-dim)');
+    t.textContent = i;
+    g.appendChild(t);
+  }
+}
+
+function setDial(suffix, index, color) {
+  const rot = rotationForIndex(index);
+  document.getElementById('pointer' + suffix).setAttribute('transform', `rotate(${rot} ${PIVOT.x} ${PIVOT.y})`);
+  document.getElementById('dialNumber' + suffix).textContent = index;
+  document.getElementById('dialNumber' + suffix).setAttribute('fill', color);
+  for (let n = 1; n <= 6; n++) {
+    const el = document.getElementById('tickNum' + suffix + n);
+    if (el) el.setAttribute('fill', n === index ? color : 'var(--text-dim)');
+  }
+}
+
+// The output dial is NOT forecast-driven -- Phase 1's data only validated the
+// overnight charge decision, not a per-day output/release schedule. Showing a
+// fixed, general-guidance position rather than inventing a computed number we
+// haven't tested (see evidence_map.md, 2026-09-02).
+const OUTPUT_DEFAULT_POSITION = 2;
+const OUTPUT_COLOR = 'var(--accent)';
+
+function render(i) {
+  const row = DATA[i];
+  document.getElementById('dayLabel').textContent = new Date(row.date+'T00:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('tempVal').textContent = row.temp_c;
+  document.getElementById('windVal').textContent = row.wind_kmh;
+  document.getElementById('indexVal').textContent = row.index + ' / 6';
+  document.getElementById('nudgeMessage').textContent = row.message;
+  document.querySelector('.message-card .icon').textContent = INDEX_ICONS[row.index];
+
+  setDial('', row.index, INDEX_COLORS[row.index]);
+
+  document.getElementById('scrub').value = i;
+  try { localStorage.setItem('automagic_demo_day', i); } catch(e) {}
+}
+
+let current = 14; // default: mid-January, a clear cold-night example
+try {
+  const saved = localStorage.getItem('automagic_demo_day');
+  if (saved !== null) current = parseInt(saved, 10);
+} catch(e) {}
+if (isNaN(current) || current < 0 || current >= DATA.length) current = 14;
+
+buildTicks('');
+buildTicks('Out');
+setDial('Out', OUTPUT_DEFAULT_POSITION, OUTPUT_COLOR); // static -- doesn't change with the date stepper
+render(current);
+
+document.getElementById('prevBtn').addEventListener('click', () => { current = Math.max(0, current-1); render(current); });
+document.getElementById('nextBtn').addEventListener('click', () => { current = Math.min(DATA.length-1, current+1); render(current); });
+document.getElementById('scrub').addEventListener('input', (e) => { current = parseInt(e.target.value,10); render(current); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') { current = Math.max(0, current-1); render(current); }
+  if (e.key === 'ArrowRight') { current = Math.min(DATA.length-1, current+1); render(current); }
+});
+</script>
+</body>
+</html>

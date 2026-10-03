@@ -1,0 +1,14 @@
+**"AC vs heat pump" is a false choice. A reversible split air conditioner already is an air-to-air heat pump. The real question is which architecture, and nobody in the UK's official evidence base has actually measured the one number that matters.**
+
+I've spent the last few weeks comparing four ways a UK home could get cooling: standalone AC bolted onto existing heating, an integrated reversible air-to-air heat pump, an air-to-water heat pump with cooling retrofitted on, and solid-state Peltier systems like TCS's Hummingbird. Here's what actually holds up.
+
+DESNZ's own July 2026 study of reversible air-to-air heat pumps is the best single source in this space, and it's genuinely useful: for a studio flat, an air-to-air heat pump with heat-pump hot water came in about 5% cheaper than a gas boiler over the year, including cooling. For an older 1919-1944 semi-detached, the same technology cost roughly 25% more than gas. Same technology, opposite verdict — the archetype decides the outcome, not the label on the box.
+
+But here's the finding that actually matters more: that report — the UK government's own dedicated 2026 study of this exact technology — contains no mention of grid peak demand, coincident demand, or system-level electricity impact anywhere. It explicitly punts all of it to future work. That's not a one-off gap. NESO's own Future Energy Scenarios modelling has the identical blind spot. Two different government documents, two different technologies, the same missing number: how much extra electricity does a cooling architecture actually add during the hours the grid is already under stress.
+
+Without that number, you can't honestly rank these four architectures against each other on the thing that should decide the comparison. What you can say: nobody — not DESNZ, not TCS, not any UK body I could find — publishes a cooling efficiency figure that lets you compare all four fairly. Standalone AC units at least carry EER/SEER labels; the others don't have an equivalent for this specific use case. And a genuinely open technical question sits underneath all of it: does combining heating and cooling into one appliance reduce total electrical load versus running two separate boxes, or could it increase it? Nobody has published the engineering answer either way.
+
+The honest conclusion isn't "technology X wins." It's that the evidence needed to decide doesn't exist yet, in a comparable form, for any of the four. That's a less satisfying headline — but it's the one the evidence actually supports, and it's a better starting point for whoever builds that evidence base next than a confident ranking would be.
+
+---
+*Sources: DESNZ, "Understanding the suitability of reversible air-to-air heat pumps for domestic use in the UK" (July 2026); DESNZ/Energy Innovation Research Office, "Air-to-Air Heat Pumps" literature review (March 2025); NESO, Future Energy Scenarios: Pathway Assumptions 2024.*

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>AutoMagic — Storage Heater Advisor</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQXV0b01hZ2ljIiwic2hvcnRfbmFtZSI6IkF1dG9NYWdpYyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIn0=">
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --text: #1a2733;
+    --text-dim: #5b6b78;
+    --accent: #2b5d8c;
+    --accent-2: #e67e22;
+    --border: #e1e6ea;
+    --dial-track: #dfe6ec;
+    --dial-face: #ffffff;
+    --shadow: 0 2px 12px rgba(20,30,40,0.08);
+    --index-1: #4a90d9;
+    --index-2: #5db67a;
+    --index-3: #a3c93c;
+    --index-4: #e0b93c;
+    --index-5: #e07b3c;
+    --index-6: #d94a4a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14191e;
+      --card-bg: #1e2530;
+      --text: #eef2f5;
+      --text-dim: #9aa7b2;
+      --accent: #6fa8d8;
+      --accent-2: #f0a15c;
+      --border: #2c3742;
+      --dial-track: #2c3742;
+      --dial-face: #232b36;
+      --shadow: 0 2px 16px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14191e; --card-bg: #1e2530; --text: #eef2f5; --text-dim: #9aa7b2;
+    --accent: #6fa8d8; --accent-2: #f0a15c; --border: #2c3742; --dial-track: #2c3742;
+    --dial-face: #232b36; --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center;
+  }
+  .app { width: 100%; max-width: 420px; padding: 20px 16px 40px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .brand { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; }
+  .brand span { color: var(--accent-2); }
+  .badge { font-size: 0.68rem; color: var(--text-dim); border: 1px solid var(--border); border-radius: 20px; padding: 2px 9px; }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin: 2px 0 18px; }
+
+  .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 14px; }
+  .date-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .date-row button { background: var(--dial-track); border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 1.1rem; color: var(--text); cursor: pointer; }
+  .date-row button:active { transform: scale(0.94); }
+  .date-label { text-align: center; }
+  .date-label .day { font-size: 0.95rem; font-weight: 600; }
+  .date-label .year-note { font-size: 0.68rem; color: var(--text-dim); }
+
+  .evening-note { text-align: center; font-size: 0.78rem; color: var(--accent-2); font-weight: 600; margin: 10px 0 2px; }
+
+  .dial-wrap { display: flex; justify-content: center; margin: 14px 0 6px; }
+  .dial-caption { text-align: center; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 4px; }
+  .dial-note { font-size: 0.78rem; color: var(--text-dim); text-align: center; line-height: 1.4; margin-top: 4px; }
+  .dial-note b { color: var(--text); }
+
+  .message-card { display: flex; gap: 10px; align-items: flex-start; }
+  .message-card .icon { font-size: 1.4rem; line-height: 1.3; }
+  .message-card p { margin: 0; font-size: 1rem; line-height: 1.45; }
+
+  .weather-row { display: flex; justify-content: space-around; text-align: center; }
+  .weather-item .val { font-size: 1.25rem; font-weight: 700; }
+  .weather-item .lbl { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .scrub { width: 100%; margin-top: 4px; accent-color: var(--accent); }
+
+  .footnote { font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-top: 18px; line-height: 1.5; }
+  .footnote b { color: var(--text); }
+
+  .savings-card { border-left: 3px solid var(--accent-2); }
+  .savings-card .amount { font-weight: 800; color: var(--accent-2); }
+  .savings-card p { margin: 0; font-size: 0.95rem; line-height: 1.45; }
+  .estimate-note { font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
+
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .gear-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px; line-height: 1; }
+  .field-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+  .text-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+  .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; font-size: 0.9rem; cursor: pointer; user-select: none; }
+  .pill input { margin-right: 6px; }
+  .primary-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px; }
+  .primary-btn:active { transform: scale(0.98); }
+  .skip-link { text-align: center; font-size: 0.85rem; color: var(--text-dim); margin-top: 14px; cursor: pointer; text-decoration: underline; }
+
+  .override-card p { margin: 0 0 10px; font-size: 0.95rem; }
+  .override-btn { width: 100%; background: none; border: 1.5px solid var(--accent-2); color: var(--accent-2); border-radius: 12px; padding: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .override-btn:active { transform: scale(0.98); }
+  .override-btn.active { background: var(--accent-2); color: #fff; }
+  .override-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .week-list { display: flex; flex-direction: column; }
+  .week-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  .week-row:last-child { border-bottom: none; }
+  .week-row.today { font-weight: 700; }
+  .week-row .wr-date { color: var(--text-dim); flex: 1; }
+  .week-row.today .wr-date { color: var(--text); }
+  .week-row .wr-dial { flex: 0 0 auto; margin: 0 10px; }
+  .week-row .wr-saving { flex: 0 0 auto; min-width: 48px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="app" id="onboardingScreen" style="display:none">
+  <div class="topbar">
+    <div class="brand">Auto<span>Magic</span></div>
+  </div>
+  <div class="subtitle" id="onboardingSubtitle">A few quick details so your advice fits your home.</div>
+
+  <div class="card">
+    <label class="field-label" for="settingsPostcode">Where's your home? (postcode)</label>
+    <input type="text" id="settingsPostcode" class="text-input" placeholder="e.g. SE1 7PB" autocomplete="postal-code">
+    <div class="estimate-note">Used later to fetch your local forecast. Not shared anywhere.</div>
+  </div>
+
+  <div class="card">
+    <div class="field-label">What's the highest number on your heater's input dial?</div>
+    <div class="pill-group">
+      <label class="pill"><input type="radio" name="settingsDialMax" value="5"> 5</label>
+      <label class="pill"><input type="radio" name="settingsDialMax" value="6"> 6</label>
+    </div>
+    <div class="estimate-note">Most legacy storage heaters go up to 6 — check yours if you're not sure. AutoMagic doesn't adjust the dial numbers to this yet, but we're saving it for when it does.</div>
+  </div>
+
+  <div class="card">
+    <div class="field-label">Are you on an Economy 7 (cheap night-rate) tariff?</div>
+    <div class="pill-group">
+      <label class="pill"><input type="radio" name="settingsTariff" value="e7"> Yes</label>
+      <label class="pill"><input type="radio" name="settingsTariff" value="other"> No</label>
+      <label class="pill"><input type="radio" name="settingsTariff" value="unsure"> Not sure</label>
+    </div>
+  </div>
+
+  <button id="settingsSaveBtn" class="primary-btn">Get started</button>
+  <div id="skipLink" class="skip-link">Skip for now</div>
+  <div id="resetDemoLink" class="skip-link">Reset demo data</div>
+</div>
+
+<div class="app" id="mainScreen">
+  <div class="topbar">
+    <div class="brand">Auto<span>Magic</span></div>
+    <div class="topbar-right">
+      <button id="settingsBtn" class="gear-btn" aria-label="Settings">⚙️</button>
+      <div class="badge">DEMO · 2013 replay</div>
+    </div>
+  </div>
+  <div class="subtitle">Real weather, real calibration — from the actual project data.</div>
+
+  <div class="card">
+    <div class="date-row">
+      <button id="prevBtn" aria-label="Previous day">‹</button>
+      <div class="date-label">
+        <div class="day" id="dayLabel">—</div>
+        <div class="year-note">tap ‹ › or drag the slider below</div>
+      </div>
+      <button id="nextBtn" aria-label="Next day">›</button>
+    </div>
+    <input type="range" class="scrub" id="scrub" min="0" max="364" value="14">
+  </div>
+
+  <div class="card">
+    <div class="evening-note">🕗 Tonight's charge — set by 20:00</div>
+    <div class="dial-caption">Input dial — how much heat to store overnight</div>
+    <div class="dial-wrap">
+      <svg id="dial" width="220" height="180" viewBox="0 0 220 180">
+        <!-- track arc (decorative only, static) -->
+        <path d="M 48.9 160.8 A 62 62 0 0 1 171.1 160.8" fill="none" stroke="var(--dial-track)" stroke-width="10" stroke-linecap="round"/>
+        <!-- tick marks + numbers, positions verified numerically (see evidence_map.md) -->
+        <g id="ticks"></g>
+        <!-- pointer, rotated via a plain verified transform, not custom trig -->
+        <g id="pointer">
+          <line x1="110" y1="150" x2="110" y2="90" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="110" cy="150" r="10" fill="var(--text)"/>
+        <text id="dialNumber" x="110" y="145" font-size="26" font-weight="800" text-anchor="middle" fill="var(--card-bg)"></text>
+      </svg>
+    </div>
+    <div class="dial-note">This changes every night with the forecast — that's the whole point of AutoMagic.</div>
+  </div>
+
+  <div class="card">
+    <div class="dial-caption">Output dial — how fast stored heat is released</div>
+    <div class="dial-wrap">
+      <svg id="dialOut" width="220" height="180" viewBox="0 0 220 180">
+        <path d="M 48.9 160.8 A 62 62 0 0 1 171.1 160.8" fill="none" stroke="var(--dial-track)" stroke-width="10" stroke-linecap="round"/>
+        <g id="ticksOut"></g>
+        <g id="pointerOut">
+          <line x1="110" y1="150" x2="110" y2="90" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <circle cx="110" cy="150" r="10" fill="var(--text)"/>
+        <text id="dialNumberOut" x="110" y="145" font-size="26" font-weight="800" text-anchor="middle" fill="var(--card-bg)"></text>
+      </svg>
+    </div>
+    <div class="dial-note">Keep this low — <b>only turn it up if the room actually feels cold</b>. Always turn it down to its lowest number before bed, so tonight's stored heat isn't wasted overnight. This is general guidance, not a forecast — AutoMagic doesn't yet calculate a daily output setting.</div>
+  </div>
+
+  <div class="card message-card">
+    <div class="icon">💬</div>
+    <p id="nudgeMessage">—</p>
+  </div>
+
+  <div class="card override-card">
+    <p id="overrideText">Does it feel colder than this tonight?</p>
+    <button id="overrideBtn" class="override-btn">It's colder than this</button>
+    <div class="estimate-note">This bumps tonight's dial suggestion up by one. It resets tomorrow — it doesn't change the forecast.</div>
+  </div>
+
+  <div class="card savings-card">
+    <p>💷 <span id="tonightSaving">—</span></p>
+    <div class="estimate-note">This is a rough guide for a typical home. It's not based on your own heater yet.</div>
+  </div>
+
+  <div class="card savings-card">
+    <p>📅 <span id="weekSaving">—</span></p>
+    <div class="estimate-note">This shows what the tips could save. It's not a record of what your heater did.</div>
+  </div>
+
+  <div class="card">
+    <div class="dial-caption">This week's settings</div>
+    <div id="weekList" class="week-list"></div>
+    <div class="estimate-note">£ shown is what the tips could have saved. Not a record of what really happened.</div>
+  </div>
+
+  <div class="card">
+    <div class="weather-row">
+      <div class="weather-item"><div class="val" id="tempVal">—</div><div class="lbl">Temp (°C)</div></div>
+      <div class="weather-item"><div class="val" id="windVal">—</div><div class="lbl">Wind (km/h)</div></div>
+      <div class="weather-item"><div class="val" id="indexVal">—</div><div class="lbl">Dial Setting</div></div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Every weather and dial number here comes from the real project pipeline replayed against actual 2013
+    London weather for confirmed storage-heater households — <b>not</b> invented demo data.
+    <br>Real deployment would use tomorrow's forecast, not a historical replay.
+    <br><b>The £ savings figures above are illustrative placeholders for this UX draft</b> — not yet
+    calculated from real tariffs, your own heater, or the household-level model in
+    <code>compliance_simulation.py</code>.
+  </div>
+</div>
+
+<script>
+const DATA = [{"date":"2013-01-01","temp_c":5.8,"wind_kmh":16.8,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-02","temp_c":6.2,"wind_kmh":15.1,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-03","temp_c":10.2,"wind_kmh":16.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-04","temp_c":8.8,"wind_kmh":13.2,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-05","temp_c":8.6,"wind_kmh":11.1,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-06","temp_c":7.0,"wind_kmh":8.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-07","temp_c":7.6,"wind_kmh":12.5,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-08","temp_c":8.9,"wind_kmh":14.5,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-09","temp_c":6.8,"wind_kmh":8.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-10","temp_c":1.8,"wind_kmh":5.1,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-11","temp_c":2.7,"wind_kmh":6.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-12","temp_c":2.7,"wind_kmh":17.7,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-13","temp_c":1.1,"wind_kmh":13.5,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-14","temp_c":0.2,"wind_kmh":12.1,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-15","temp_c":0.6,"wind_kmh":15.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-16","temp_c":-2.2,"wind_kmh":6.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-17","temp_c":-2.2,"wind_kmh":6.5,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-18","temp_c":-1.4,"wind_kmh":17.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-19","temp_c":-0.2,"wind_kmh":16.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-20","temp_c":-1.2,"wind_kmh":13.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-21","temp_c":-1.5,"wind_kmh":5.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-22","temp_c":-1.5,"wind_kmh":14.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-23","temp_c":0.9,"wind_kmh":15.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-24","temp_c":-0.3,"wind_kmh":10.2,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-25","temp_c":-1.5,"wind_kmh":13.5,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-26","temp_c":3.3,"wind_kmh":18.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-27","temp_c":7.6,"wind_kmh":27.2,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-28","temp_c":5.8,"wind_kmh":25.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-29","temp_c":10.9,"wind_kmh":26.5,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-30","temp_c":10.1,"wind_kmh":28.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-01-31","temp_c":8.2,"wind_kmh":28.2,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-01","temp_c":5.4,"wind_kmh":13.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-02","temp_c":2.7,"wind_kmh":19.7,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-03","temp_c":3.6,"wind_kmh":16.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-04","temp_c":7.9,"wind_kmh":24.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-05","temp_c":3.6,"wind_kmh":26.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-06","temp_c":3.5,"wind_kmh":25.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-07","temp_c":1.9,"wind_kmh":15.1,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-08","temp_c":1.2,"wind_kmh":12.7,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-09","temp_c":1.6,"wind_kmh":8.1,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-10","temp_c":2.6,"wind_kmh":18.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-11","temp_c":1.1,"wind_kmh":14.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-12","temp_c":1.1,"wind_kmh":11.5,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-13","temp_c":0.5,"wind_kmh":13.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-14","temp_c":6.5,"wind_kmh":18.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-15","temp_c":4.4,"wind_kmh":10.4,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-16","temp_c":5.0,"wind_kmh":5.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-17","temp_c":3.5,"wind_kmh":11.1,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-18","temp_c":3.3,"wind_kmh":11.1,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-19","temp_c":0.8,"wind_kmh":4.9,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-20","temp_c":2.0,"wind_kmh":15.7,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-21","temp_c":0.7,"wind_kmh":17.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-22","temp_c":0.3,"wind_kmh":17.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-23","temp_c":0.3,"wind_kmh":16.2,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-24","temp_c":0.4,"wind_kmh":18.4,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-25","temp_c":2.5,"wind_kmh":18.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-26","temp_c":3.5,"wind_kmh":17.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-27","temp_c":3.0,"wind_kmh":16.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-02-28","temp_c":3.5,"wind_kmh":16.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-01","temp_c":3.9,"wind_kmh":14.9,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-02","temp_c":2.3,"wind_kmh":8.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-03","temp_c":2.6,"wind_kmh":9.2,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-04","temp_c":3.6,"wind_kmh":12.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-05","temp_c":5.8,"wind_kmh":8.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-06","temp_c":7.4,"wind_kmh":9.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-07","temp_c":8.0,"wind_kmh":10.1,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-08","temp_c":8.5,"wind_kmh":8.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-09","temp_c":6.0,"wind_kmh":8.2,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-10","temp_c":2.1,"wind_kmh":18.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-11","temp_c":-0.2,"wind_kmh":29.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-12","temp_c":0.1,"wind_kmh":26.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-13","temp_c":1.9,"wind_kmh":14.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-14","temp_c":1.0,"wind_kmh":9.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-15","temp_c":4.3,"wind_kmh":22.3,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-16","temp_c":6.1,"wind_kmh":27.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-17","temp_c":4.7,"wind_kmh":12.9,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-18","temp_c":3.2,"wind_kmh":6.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-19","temp_c":3.3,"wind_kmh":6.1,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-20","temp_c":3.2,"wind_kmh":10.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-21","temp_c":3.1,"wind_kmh":15.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-22","temp_c":3.2,"wind_kmh":26.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-23","temp_c":1.6,"wind_kmh":22.4,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-24","temp_c":0.1,"wind_kmh":20.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-25","temp_c":0.4,"wind_kmh":21.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-26","temp_c":0.3,"wind_kmh":19.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-27","temp_c":0.8,"wind_kmh":15.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-28","temp_c":1.0,"wind_kmh":15.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-29","temp_c":0.2,"wind_kmh":13.4,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-30","temp_c":1.2,"wind_kmh":14.2,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-03-31","temp_c":0.5,"wind_kmh":12.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-01","temp_c":1.8,"wind_kmh":20.3,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-02","temp_c":2.6,"wind_kmh":20.2,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-03","temp_c":1.7,"wind_kmh":22.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-04","temp_c":1.9,"wind_kmh":23.8,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-05","temp_c":3.3,"wind_kmh":24.0,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-06","temp_c":3.5,"wind_kmh":12.8,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-07","temp_c":3.2,"wind_kmh":8.9,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-08","temp_c":4.9,"wind_kmh":16.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-09","temp_c":4.8,"wind_kmh":15.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-10","temp_c":6.1,"wind_kmh":10.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-11","temp_c":7.1,"wind_kmh":12.0,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-12","temp_c":8.4,"wind_kmh":16.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-13","temp_c":8.2,"wind_kmh":19.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-14","temp_c":13.4,"wind_kmh":24.9,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-15","temp_c":11.5,"wind_kmh":21.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-16","temp_c":11.3,"wind_kmh":23.3,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-17","temp_c":11.8,"wind_kmh":21.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-18","temp_c":10.1,"wind_kmh":30.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-19","temp_c":8.4,"wind_kmh":15.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-20","temp_c":5.9,"wind_kmh":8.2,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-21","temp_c":7.0,"wind_kmh":9.1,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-22","temp_c":9.3,"wind_kmh":14.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-23","temp_c":13.1,"wind_kmh":11.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-24","temp_c":12.5,"wind_kmh":11.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-25","temp_c":14.2,"wind_kmh":11.3,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-26","temp_c":8.9,"wind_kmh":13.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-27","temp_c":6.0,"wind_kmh":14.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-28","temp_c":6.2,"wind_kmh":13.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-29","temp_c":9.2,"wind_kmh":15.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-04-30","temp_c":7.9,"wind_kmh":12.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-01","temp_c":8.4,"wind_kmh":10.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-02","temp_c":9.1,"wind_kmh":10.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-03","temp_c":11.1,"wind_kmh":10.0,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-04","temp_c":10.9,"wind_kmh":18.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-05","temp_c":11.4,"wind_kmh":7.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-06","temp_c":13.2,"wind_kmh":5.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-07","temp_c":13.8,"wind_kmh":8.0,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-08","temp_c":12.9,"wind_kmh":17.7,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-09","temp_c":10.5,"wind_kmh":28.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-10","temp_c":12.4,"wind_kmh":25.0,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-11","temp_c":10.4,"wind_kmh":21.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-12","temp_c":9.6,"wind_kmh":19.9,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-13","temp_c":11.0,"wind_kmh":23.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-14","temp_c":8.6,"wind_kmh":19.0,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-15","temp_c":9.1,"wind_kmh":22.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-16","temp_c":9.5,"wind_kmh":6.1,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-17","temp_c":9.1,"wind_kmh":11.5,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-18","temp_c":10.9,"wind_kmh":9.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-19","temp_c":12.7,"wind_kmh":8.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-20","temp_c":13.4,"wind_kmh":16.7,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-21","temp_c":12.9,"wind_kmh":15.0,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-22","temp_c":11.4,"wind_kmh":12.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-23","temp_c":8.1,"wind_kmh":18.0,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-24","temp_c":7.1,"wind_kmh":19.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-25","temp_c":9.5,"wind_kmh":14.2,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-26","temp_c":11.5,"wind_kmh":11.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-27","temp_c":11.0,"wind_kmh":15.3,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-28","temp_c":10.8,"wind_kmh":9.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-29","temp_c":10.7,"wind_kmh":10.7,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-30","temp_c":12.4,"wind_kmh":14.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-05-31","temp_c":14.5,"wind_kmh":14.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-01","temp_c":12.9,"wind_kmh":14.7,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-02","temp_c":12.8,"wind_kmh":11.3,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-03","temp_c":11.9,"wind_kmh":11.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-04","temp_c":12.1,"wind_kmh":17.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-05","temp_c":12.6,"wind_kmh":13.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-06","temp_c":13.3,"wind_kmh":15.9,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-07","temp_c":14.1,"wind_kmh":18.3,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-08","temp_c":12.4,"wind_kmh":20.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-09","temp_c":12.5,"wind_kmh":17.3,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-10","temp_c":12.4,"wind_kmh":6.4,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-11","temp_c":13.3,"wind_kmh":14.9,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-12","temp_c":15.2,"wind_kmh":23.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-13","temp_c":14.6,"wind_kmh":27.9,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-14","temp_c":13.5,"wind_kmh":17.6,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-15","temp_c":13.9,"wind_kmh":25.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-16","temp_c":13.5,"wind_kmh":13.3,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-17","temp_c":14.9,"wind_kmh":17.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-18","temp_c":17.2,"wind_kmh":9.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-19","temp_c":19.0,"wind_kmh":7.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-20","temp_c":17.3,"wind_kmh":10.4,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-21","temp_c":16.6,"wind_kmh":13.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-22","temp_c":14.3,"wind_kmh":26.7,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-23","temp_c":14.8,"wind_kmh":24.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-24","temp_c":12.8,"wind_kmh":15.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-25","temp_c":14.1,"wind_kmh":7.9,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-26","temp_c":16.0,"wind_kmh":8.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-27","temp_c":14.5,"wind_kmh":10.0,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-28","temp_c":15.4,"wind_kmh":13.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-29","temp_c":15.8,"wind_kmh":13.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-06-30","temp_c":18.5,"wind_kmh":14.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-01","temp_c":16.3,"wind_kmh":13.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-02","temp_c":14.5,"wind_kmh":12.8,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-03","temp_c":16.4,"wind_kmh":14.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-04","temp_c":17.1,"wind_kmh":15.4,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-05","temp_c":18.3,"wind_kmh":7.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-06","temp_c":18.9,"wind_kmh":5.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-07","temp_c":20.5,"wind_kmh":9.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-08","temp_c":18.9,"wind_kmh":15.4,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-09","temp_c":18.1,"wind_kmh":13.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-10","temp_c":17.2,"wind_kmh":15.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-11","temp_c":15.2,"wind_kmh":13.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-12","temp_c":17.0,"wind_kmh":7.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-13","temp_c":21.6,"wind_kmh":6.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-14","temp_c":22.1,"wind_kmh":8.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-15","temp_c":21.8,"wind_kmh":6.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-16","temp_c":22.8,"wind_kmh":4.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-17","temp_c":22.9,"wind_kmh":4.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-18","temp_c":21.2,"wind_kmh":11.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-19","temp_c":20.3,"wind_kmh":15.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-20","temp_c":18.8,"wind_kmh":17.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-21","temp_c":20.2,"wind_kmh":13.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-22","temp_c":23.8,"wind_kmh":10.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-23","temp_c":23.1,"wind_kmh":9.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-24","temp_c":20.5,"wind_kmh":12.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-25","temp_c":19.8,"wind_kmh":13.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-26","temp_c":19.6,"wind_kmh":5.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-27","temp_c":20.0,"wind_kmh":5.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-28","temp_c":18.7,"wind_kmh":20.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-29","temp_c":17.9,"wind_kmh":20.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-30","temp_c":16.8,"wind_kmh":16.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-07-31","temp_c":18.6,"wind_kmh":17.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-01","temp_c":22.8,"wind_kmh":14.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-02","temp_c":19.6,"wind_kmh":14.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-03","temp_c":18.1,"wind_kmh":18.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-04","temp_c":17.9,"wind_kmh":17.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-05","temp_c":18.3,"wind_kmh":15.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-06","temp_c":16.8,"wind_kmh":7.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-07","temp_c":17.3,"wind_kmh":11.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-08","temp_c":16.6,"wind_kmh":8.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-09","temp_c":18.3,"wind_kmh":15.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-10","temp_c":16.9,"wind_kmh":10.4,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-11","temp_c":18.2,"wind_kmh":14.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-12","temp_c":16.3,"wind_kmh":13.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-13","temp_c":15.3,"wind_kmh":12.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-14","temp_c":16.4,"wind_kmh":9.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-15","temp_c":19.2,"wind_kmh":17.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-16","temp_c":17.9,"wind_kmh":14.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-17","temp_c":16.6,"wind_kmh":19.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-18","temp_c":18.8,"wind_kmh":16.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-19","temp_c":17.0,"wind_kmh":11.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-20","temp_c":17.6,"wind_kmh":5.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-21","temp_c":18.1,"wind_kmh":7.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-22","temp_c":18.7,"wind_kmh":6.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-23","temp_c":20.0,"wind_kmh":12.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-24","temp_c":17.0,"wind_kmh":12.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-25","temp_c":17.1,"wind_kmh":16.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-26","temp_c":18.2,"wind_kmh":12.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-27","temp_c":16.1,"wind_kmh":8.4,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-28","temp_c":16.1,"wind_kmh":5.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-29","temp_c":17.9,"wind_kmh":9.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-30","temp_c":18.3,"wind_kmh":13.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-08-31","temp_c":16.3,"wind_kmh":13.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-01","temp_c":14.7,"wind_kmh":12.1,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-02","temp_c":16.8,"wind_kmh":12.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-03","temp_c":18.5,"wind_kmh":4.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-04","temp_c":18.7,"wind_kmh":6.7,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-05","temp_c":20.4,"wind_kmh":5.2,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-06","temp_c":15.4,"wind_kmh":10.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-07","temp_c":13.6,"wind_kmh":13.8,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-08","temp_c":11.8,"wind_kmh":9.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-09","temp_c":11.6,"wind_kmh":8.3,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-10","temp_c":12.5,"wind_kmh":17.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-11","temp_c":13.5,"wind_kmh":15.7,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-12","temp_c":14.1,"wind_kmh":6.3,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-13","temp_c":16.2,"wind_kmh":7.0,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-14","temp_c":11.7,"wind_kmh":13.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-15","temp_c":11.3,"wind_kmh":18.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-16","temp_c":11.2,"wind_kmh":20.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-17","temp_c":11.0,"wind_kmh":14.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-18","temp_c":12.3,"wind_kmh":12.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-19","temp_c":12.0,"wind_kmh":16.4,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-20","temp_c":13.4,"wind_kmh":9.3,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-21","temp_c":13.5,"wind_kmh":10.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-22","temp_c":16.8,"wind_kmh":6.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-23","temp_c":16.6,"wind_kmh":5.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-24","temp_c":15.1,"wind_kmh":5.6,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-25","temp_c":15.7,"wind_kmh":4.8,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-26","temp_c":14.5,"wind_kmh":12.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-27","temp_c":12.6,"wind_kmh":13.2,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-28","temp_c":14.3,"wind_kmh":17.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-29","temp_c":14.3,"wind_kmh":18.1,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-09-30","temp_c":14.9,"wind_kmh":13.9,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-01","temp_c":14.3,"wind_kmh":15.7,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-02","temp_c":15.4,"wind_kmh":14.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-03","temp_c":16.1,"wind_kmh":15.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-04","temp_c":17.3,"wind_kmh":19.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-05","temp_c":15.3,"wind_kmh":7.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-06","temp_c":13.8,"wind_kmh":6.6,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-07","temp_c":13.3,"wind_kmh":9.0,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-08","temp_c":15.6,"wind_kmh":11.5,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-09","temp_c":13.6,"wind_kmh":15.1,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-10","temp_c":9.3,"wind_kmh":27.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-11","temp_c":11.1,"wind_kmh":27.7,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-12","temp_c":11.4,"wind_kmh":14.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-13","temp_c":9.6,"wind_kmh":16.1,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-14","temp_c":9.1,"wind_kmh":14.0,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-15","temp_c":9.5,"wind_kmh":11.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-16","temp_c":9.7,"wind_kmh":16.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-17","temp_c":13.2,"wind_kmh":15.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-18","temp_c":12.6,"wind_kmh":12.7,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-19","temp_c":13.9,"wind_kmh":15.9,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-20","temp_c":13.4,"wind_kmh":21.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-21","temp_c":14.8,"wind_kmh":23.1,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-22","temp_c":16.0,"wind_kmh":22.4,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-23","temp_c":13.9,"wind_kmh":23.5,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-24","temp_c":11.1,"wind_kmh":10.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-25","temp_c":15.3,"wind_kmh":22.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-26","temp_c":15.0,"wind_kmh":27.3,"index":1,"message":"Tonight's mild. Turn your heater's input dial right down to 1. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-27","temp_c":13.5,"wind_kmh":27.4,"index":2,"message":"A mild night ahead. Set your heater's input dial to 2. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-28","temp_c":12.7,"wind_kmh":30.3,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-29","temp_c":9.1,"wind_kmh":18.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-30","temp_c":9.0,"wind_kmh":15.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-10-31","temp_c":12.5,"wind_kmh":17.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-01","temp_c":12.0,"wind_kmh":14.9,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-02","temp_c":11.5,"wind_kmh":19.6,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-03","temp_c":8.7,"wind_kmh":23.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-04","temp_c":7.4,"wind_kmh":17.9,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-05","temp_c":7.6,"wind_kmh":17.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-06","temp_c":10.4,"wind_kmh":19.0,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-07","temp_c":10.4,"wind_kmh":13.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-08","temp_c":7.5,"wind_kmh":11.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-09","temp_c":5.4,"wind_kmh":11.4,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-10","temp_c":5.2,"wind_kmh":12.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-11","temp_c":8.5,"wind_kmh":17.0,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-12","temp_c":10.0,"wind_kmh":11.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-13","temp_c":5.1,"wind_kmh":9.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-14","temp_c":7.2,"wind_kmh":21.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-15","temp_c":4.8,"wind_kmh":13.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-16","temp_c":4.0,"wind_kmh":6.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-17","temp_c":6.0,"wind_kmh":6.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-18","temp_c":7.8,"wind_kmh":7.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-19","temp_c":2.9,"wind_kmh":15.9,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-20","temp_c":2.3,"wind_kmh":18.2,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-21","temp_c":4.5,"wind_kmh":22.2,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-22","temp_c":4.8,"wind_kmh":19.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-23","temp_c":4.6,"wind_kmh":15.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-24","temp_c":4.6,"wind_kmh":15.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-25","temp_c":4.0,"wind_kmh":14.3,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-26","temp_c":2.5,"wind_kmh":9.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-27","temp_c":6.4,"wind_kmh":6.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-28","temp_c":7.2,"wind_kmh":6.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-29","temp_c":7.3,"wind_kmh":16.9,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-11-30","temp_c":5.3,"wind_kmh":16.4,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-01","temp_c":3.7,"wind_kmh":8.4,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-02","temp_c":5.5,"wind_kmh":7.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-03","temp_c":3.2,"wind_kmh":5.4,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-04","temp_c":4.4,"wind_kmh":12.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-05","temp_c":4.4,"wind_kmh":23.8,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-06","temp_c":4.3,"wind_kmh":15.6,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-07","temp_c":5.9,"wind_kmh":13.5,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-08","temp_c":7.3,"wind_kmh":16.9,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-09","temp_c":6.7,"wind_kmh":12.8,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-10","temp_c":3.9,"wind_kmh":9.2,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-11","temp_c":2.8,"wind_kmh":8.9,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-12","temp_c":5.2,"wind_kmh":12.8,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-13","temp_c":8.7,"wind_kmh":16.5,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-14","temp_c":7.3,"wind_kmh":22.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-15","temp_c":10.7,"wind_kmh":25.1,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-16","temp_c":11.4,"wind_kmh":23.5,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-17","temp_c":6.3,"wind_kmh":7.4,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-18","temp_c":8.1,"wind_kmh":23.6,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-19","temp_c":6.1,"wind_kmh":18.0,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-20","temp_c":5.4,"wind_kmh":21.1,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-21","temp_c":10.2,"wind_kmh":33.8,"index":3,"message":"A cool night. Set your heater's input dial to 3. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-22","temp_c":7.1,"wind_kmh":22.9,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-23","temp_c":8.1,"wind_kmh":32.9,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-24","temp_c":8.5,"wind_kmh":29.2,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-25","temp_c":4.7,"wind_kmh":13.8,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-26","temp_c":4.1,"wind_kmh":11.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-27","temp_c":9.0,"wind_kmh":32.5,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-28","temp_c":4.8,"wind_kmh":13.7,"index":5,"message":"A cold night ahead. Set your heater's input dial to 5. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-29","temp_c":2.3,"wind_kmh":13.6,"index":6,"message":"A very cold night. Set your heater's input dial to 6, the top setting. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-30","temp_c":7.8,"wind_kmh":28.7,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."},{"date":"2013-12-31","temp_c":7.4,"wind_kmh":21.3,"index":4,"message":"Getting colder. Set your heater's input dial to 4. Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow."}];
+
+// --- Onboarding / Settings screen (local-only for now, no backend wired up) ---
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem('automagic_settings');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function populateSettingsForm(settings) {
+  document.getElementById('settingsPostcode').value = settings.postcode || '';
+  const dm = settings.dialMax || '6';
+  const dmEl = document.querySelector(`input[name="settingsDialMax"][value="${dm}"]`);
+  if (dmEl) dmEl.checked = true;
+  const tf = settings.tariff || 'e7';
+  const tfEl = document.querySelector(`input[name="settingsTariff"][value="${tf}"]`);
+  if (tfEl) tfEl.checked = true;
+}
+function showOnboarding(isFirstRun) {
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('onboardingScreen').style.display = 'block';
+  document.getElementById('skipLink').style.display = isFirstRun ? 'block' : 'none';
+  document.getElementById('onboardingSubtitle').textContent = isFirstRun
+    ? "A few quick details so your advice fits your home."
+    : "Update your details below.";
+  document.getElementById('settingsSaveBtn').textContent = isFirstRun ? 'Get started' : 'Save';
+}
+function showMainScreenView() {
+  document.getElementById('onboardingScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'block';
+}
+function saveSettingsAndContinue() {
+  const postcode = document.getElementById('settingsPostcode').value.trim();
+  const dialMaxEl = document.querySelector('input[name="settingsDialMax"]:checked');
+  const tariffEl = document.querySelector('input[name="settingsTariff"]:checked');
+  const settings = {
+    postcode,
+    dialMax: dialMaxEl ? dialMaxEl.value : '6',
+    tariff: tariffEl ? tariffEl.value : 'e7',
+  };
+  try { localStorage.setItem('automagic_settings', JSON.stringify(settings)); } catch (e) {}
+  showMainScreenView();
+}
+function resetDemoData() {
+  try {
+    localStorage.removeItem('automagic_settings');
+    localStorage.removeItem('automagic_overrides');
+    localStorage.removeItem('automagic_demo_day');
+  } catch (e) {}
+  overrides = {};
+  current = 14;
+  populateSettingsForm({});
+  showOnboarding(true);
+}
+
+function skipOnboarding() {
+  const defaults = { postcode: '', dialMax: '6', tariff: 'e7' };
+  try { localStorage.setItem('automagic_settings', JSON.stringify(defaults)); } catch (e) {}
+  showMainScreenView();
+}
+
+const existingSettings = loadSettings();
+populateSettingsForm(existingSettings || {});
+if (existingSettings) {
+  showMainScreenView();
+} else {
+  showOnboarding(true);
+}
+document.getElementById('settingsSaveBtn').addEventListener('click', saveSettingsAndContinue);
+document.getElementById('skipLink').addEventListener('click', skipOnboarding);
+document.getElementById('resetDemoLink').addEventListener('click', resetDemoData);
+document.getElementById('settingsBtn').addEventListener('click', () => showOnboarding(false));
+document.getElementById('overrideBtn').addEventListener('click', toggleOverride);
+
+const INDEX_COLORS = {1:'var(--index-1)',2:'var(--index-2)',3:'var(--index-3)',4:'var(--index-4)',5:'var(--index-5)',6:'var(--index-6)'};
+const INDEX_ICONS = {1:'🌤️',2:'⛅',3:'🌥️',4:'🌦️',5:'🌧️',6:'❄️'};
+
+// Dial geometry: 6 positions, matching the real physical dial numbering (1-6)
+// confirmed 2026-09-02 against a real housing association's Dimplex heater
+// tenant guide -- verified numerically in Python before use, same discipline
+// as the original 5-position version (see evidence_map.md).
+const PIVOT = {x: 110, y: 150};
+const N_POSITIONS = 6;
+function rotationForIndex(i) { return -100 + (i - 1) / (N_POSITIONS - 1) * 200; }
+function svgRotate(px, py, cx, cy, thetaDeg) {
+  const theta = thetaDeg * Math.PI / 180;
+  const dx = px - cx, dy = py - cy;
+  return {
+    x: cx + dx * Math.cos(theta) - dy * Math.sin(theta),
+    y: cy + dx * Math.sin(theta) + dy * Math.cos(theta),
+  };
+}
+
+function buildTicks(suffix) {
+  const g = document.getElementById('ticks' + suffix);
+  g.innerHTML = '';
+  for (let i = 1; i <= 6; i++) {
+    const rot = rotationForIndex(i);
+    const p = svgRotate(110, 150 - 78, PIVOT.x, PIVOT.y, rot);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y + 5);
+    t.setAttribute('id', 'tickNum' + suffix + i);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', '14');
+    t.setAttribute('font-weight', '700');
+    t.setAttribute('fill', 'var(--text-dim)');
+    t.textContent = i;
+    g.appendChild(t);
+  }
+}
+
+function setDial(suffix, index, color) {
+  const rot = rotationForIndex(index);
+  document.getElementById('pointer' + suffix).setAttribute('transform', `rotate(${rot} ${PIVOT.x} ${PIVOT.y})`);
+  document.getElementById('dialNumber' + suffix).textContent = index;
+  document.getElementById('dialNumber' + suffix).setAttribute('fill', color);
+  for (let n = 1; n <= 6; n++) {
+    const el = document.getElementById('tickNum' + suffix + n);
+    if (el) el.setAttribute('fill', n === index ? color : 'var(--text-dim)');
+  }
+}
+
+// The output dial is NOT forecast-driven -- Phase 1's data only validated the
+// overnight charge decision, not a per-day output/release schedule. Showing a
+// fixed, general-guidance position rather than inventing a computed number we
+// haven't tested (see evidence_map.md, 2026-09-02).
+const OUTPUT_DEFAULT_POSITION = 2;
+const OUTPUT_COLOR = 'var(--accent)';
+
+// Illustrative savings estimate -- NOT yet the real per-night calculation.
+// FULL_NIGHT_COST_GBP is a placeholder typical-home full (index-6) off-peak
+// charge cost; SAVING_FRACTION_BY_INDEX is a simple, non-calibrated ramp
+// (mock only, for UX design) standing in for the real calibration curve
+// that src/compliance_simulation.py's household-level machinery will
+// eventually produce. Index 6 (coldest) saves nothing vs. itself, by
+// construction -- on the coldest nights, the recommended setting IS max.
+const FULL_NIGHT_COST_GBP = 1.10;
+const SAVING_FRACTION_BY_INDEX = {1: 0.85, 2: 0.68, 3: 0.50, 4: 0.33, 5: 0.17, 6: 0.00};
+
+function tonightSavingGbp(index) {
+  return FULL_NIGHT_COST_GBP * SAVING_FRACTION_BY_INDEX[index];
+}
+
+// Delegates to buildWeekRows (defined below, but hoisted -- a JS function
+// declaration is available to callers regardless of source order) rather
+// than re-deriving the same total a second, independent way. A real bug
+// was caught here 2026-09-02: this used to loop over DATA[k].index (the
+// forecast) while the week-history list below shows the EFFECTIVE index
+// (forecast, or the overridden number when a night was overridden) -- the
+// two totals silently disagreed by the override delta whenever any night
+// in the window had been overridden. Delegating means the headline number
+// is now structurally the sum of the list underneath it; they cannot
+// diverge again without buildWeekRows itself being wrong, not just this
+// function forgetting to match it.
+function weekSavingGbp(dayIdx) {
+  return buildWeekRows(dayIdx).reduce((sum, r) => sum + r.saving, 0);
+}
+
+// --- Self-tests (same discipline as src/nudge_generator.py's own __main__ block:
+// deterministic assertions, fail loudly, printed pass/fail, run on demand rather than
+// on every page load for every tenant -- PROJECT.md 5.5 deterministic-baseline,
+// 5.3/5.7-style "fail loudly, no silent except: pass"). Run manually from the browser
+// console with AutoMagicSelfTest(), or load this file with ?selftest=1 in the URL.
+function assertTrue(cond, msg) {
+  if (!cond) throw new Error('AutoMagic self-test FAILED: ' + msg);
+}
+
+function runSelfTests() {
+  const results = [];
+  function check(name, fn) {
+    try {
+      fn();
+      results.push({ name, pass: true });
+      console.log(`  [PASS] ${name}`);
+    } catch (e) {
+      results.push({ name, pass: false, error: e.message });
+      console.error(`  [FAIL] ${name}: ${e.message}`);
+    }
+  }
+
+  console.log('=== AutoMagic demo self-tests ===');
+
+  check('DATA has all 365 days of 2013', () => {
+    assertTrue(DATA.length === 365, `expected 365 rows, got ${DATA.length}`);
+  });
+
+  check('DATA dates are unique and cover 2013-01-01 to 2013-12-31', () => {
+    const dates = DATA.map(r => r.date);
+    assertTrue(new Set(dates).size === dates.length, 'duplicate dates found');
+    assertTrue(dates[0] === '2013-01-01', `first date is ${dates[0]}, expected 2013-01-01`);
+    assertTrue(dates[dates.length - 1] === '2013-12-31', `last date is ${dates[dates.length - 1]}, expected 2013-12-31`);
+  });
+
+  check('every index value is in the valid 1-6 range', () => {
+    DATA.forEach((r, i) => {
+      assertTrue(Number.isInteger(r.index) && r.index >= 1 && r.index <= 6,
+        `row ${i} (${r.date}) has index ${r.index}, outside 1-6`);
+    });
+  });
+
+  check('tonightSavingGbp is deterministic (same input -> same output)', () => {
+    const a = tonightSavingGbp(3);
+    const b = tonightSavingGbp(3);
+    assertTrue(a === b, `${a} !== ${b}`);
+  });
+
+  check('tonightSavingGbp(6) is exactly zero -- coldest night saves nothing vs. itself', () => {
+    assertTrue(tonightSavingGbp(6) === 0, `got ${tonightSavingGbp(6)}, expected 0`);
+  });
+
+  check('tonightSavingGbp is monotonically non-increasing as index rises (1 saves most, 6 saves least)', () => {
+    for (let idx = 1; idx < 6; idx++) {
+      const lower = tonightSavingGbp(idx);
+      const higher = tonightSavingGbp(idx + 1);
+      assertTrue(lower >= higher, `index ${idx} (£${lower}) should save >= index ${idx + 1} (£${higher})`);
+    }
+  });
+
+  check('tonightSavingGbp never returns a negative or non-finite value, for every real index in DATA', () => {
+    DATA.forEach((r) => {
+      const v = tonightSavingGbp(r.index);
+      assertTrue(Number.isFinite(v) && v >= 0, `index ${r.index} (${r.date}) produced ${v}`);
+    });
+  });
+
+  check('weekSavingGbp(0) equals a single night (no days before the start of the array)', () => {
+    const expected = tonightSavingGbp(DATA[0].index);
+    const actual = weekSavingGbp(0);
+    assertTrue(Math.abs(actual - expected) < 1e-9, `expected ${expected}, got ${actual}`);
+  });
+
+  check('weekSavingGbp(6) equals the sum of the first 7 nights (days 0-6)', () => {
+    let expected = 0;
+    for (let k = 0; k <= 6; k++) expected += tonightSavingGbp(DATA[k].index);
+    const actual = weekSavingGbp(6);
+    assertTrue(Math.abs(actual - expected) < 1e-9, `expected ${expected}, got ${actual}`);
+  });
+
+  check('dial geometry: rotationForIndex spans exactly -100deg to 100deg across 1-6', () => {
+    assertTrue(rotationForIndex(1) === -100, `rotationForIndex(1) = ${rotationForIndex(1)}, expected -100`);
+    assertTrue(rotationForIndex(6) === 100, `rotationForIndex(6) = ${rotationForIndex(6)}, expected 100`);
+  });
+
+  check('overriddenIndex bumps by one and caps at 6, never exceeding the valid range', () => {
+    assertTrue(overriddenIndex(3) === 4, `overriddenIndex(3) = ${overriddenIndex(3)}, expected 4`);
+    assertTrue(overriddenIndex(5) === 6, `overriddenIndex(5) = ${overriddenIndex(5)}, expected 6`);
+    assertTrue(overriddenIndex(6) === 6, `overriddenIndex(6) = ${overriddenIndex(6)}, expected 6 (capped, not 7)`);
+  });
+
+  check('buildWeekRows returns the right number of rows near the start of the array', () => {
+    assertTrue(buildWeekRows(0).length === 1, `expected 1 row at day 0, got ${buildWeekRows(0).length}`);
+    assertTrue(buildWeekRows(6).length === 7, `expected 7 rows at day 6, got ${buildWeekRows(6).length}`);
+    assertTrue(buildWeekRows(10).length === 7, `expected 7 rows at day 10, got ${buildWeekRows(10).length}`);
+  });
+
+  check('buildWeekRows saving total matches weekSavingGbp when nothing is overridden', () => {
+    const savedOverrides = overrides;
+    overrides = {};
+    try {
+      const rows = buildWeekRows(6);
+      const rowTotal = rows.reduce((sum, r) => sum + r.saving, 0);
+      const weekTotal = weekSavingGbp(6);
+      assertTrue(Math.abs(rowTotal - weekTotal) < 1e-9, `row total ${rowTotal} !== weekSavingGbp ${weekTotal}`);
+    } finally {
+      overrides = savedOverrides;
+    }
+  });
+
+  check('weekSavingGbp still matches the visible list total when a night IS overridden (regression test for the 2026-09-02 divergence bug)', () => {
+    const savedOverrides = overrides;
+    overrides = { [DATA[3].date]: true };
+    try {
+      const rows = buildWeekRows(6);
+      const rowTotal = rows.reduce((sum, r) => sum + r.saving, 0);
+      const weekTotal = weekSavingGbp(6);
+      assertTrue(Math.abs(rowTotal - weekTotal) < 1e-9, `row total ${rowTotal} !== weekSavingGbp ${weekTotal} with an override present`);
+    } finally {
+      overrides = savedOverrides;
+    }
+  });
+
+  const failed = results.filter(r => !r.pass);
+  console.log(`=== ${results.length - failed.length}/${results.length} self-tests passed ===`);
+  if (failed.length) {
+    console.error(`${failed.length} test(s) failed -- see [FAIL] lines above. Not silently ignored.`);
+  }
+  return failed.length === 0;
+}
+
+window.AutoMagicSelfTest = runSelfTests;
+
+// --- Manual override: bumps TONIGHT'S ADVICE up by one dial position, not a
+// relay or hardware control -- this app has no relay to switch (see
+// evidence_map.md, 2026-09-02: AutoMagic targets legacy dial-only heaters).
+// Deliberately NOT reusing config/phase3_control_config.py's
+// MANUAL_OVERRIDE_DURATION_MIN (30 min) -- that constant times a relay
+// staying on for a hardware retrofit, a different physical mechanism to
+// "tonight's dial number is one step higher." Scoped by date instead:
+// applies to the night it was set for, resets when the date changes.
+function loadOverrides() {
+  try {
+    const raw = localStorage.getItem('automagic_overrides');
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function saveOverrides(obj) {
+  try { localStorage.setItem('automagic_overrides', JSON.stringify(obj)); } catch (e) {}
+}
+function overriddenIndex(baseIndex) {
+  return Math.min(6, baseIndex + 1);
+}
+let overrides = loadOverrides();
+
+function toggleOverride() {
+  const row = DATA[current];
+  if (overrides[row.date]) {
+    delete overrides[row.date];
+  } else {
+    overrides[row.date] = true;
+  }
+  saveOverrides(overrides);
+  render(current);
+}
+
+// --- Week history list: reuses buildWeekRows' per-night figures so this list and the
+// "This week" total card can never silently disagree (NASA/JPL-style: protect the
+// relationship between two derived numbers, not just each one individually).
+function buildWeekRows(dayIdx) {
+  const rows = [];
+  for (let k = Math.max(0, dayIdx - 6); k <= dayIdx; k++) {
+    const r = DATA[k];
+    const isOverridden = !!overrides[r.date];
+    const index = isOverridden ? overriddenIndex(r.index) : r.index;
+    rows.push({
+      date: r.date,
+      index,
+      forecastIndex: r.index,
+      overridden: isOverridden,
+      saving: tonightSavingGbp(index),
+      isToday: k === dayIdx,
+    });
+  }
+  return rows;
+}
+
+function renderWeekList(dayIdx) {
+  const rows = buildWeekRows(dayIdx);
+  const el = document.getElementById('weekList');
+  const rowsHtml = rows.map(r => {
+    const d = new Date(r.date + 'T00:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+    const label = r.isToday ? `${d} (tonight)` : d;
+    const mark = r.overridden ? ' *' : '';
+    return `<div class="week-row${r.isToday ? ' today' : ''}">` +
+      `<span class="wr-date">${label}</span>` +
+      `<span class="wr-dial" style="color:${INDEX_COLORS[r.index]}">${INDEX_ICONS[r.index]} ${r.index}${mark}</span>` +
+      `<span class="wr-saving">£${r.saving.toFixed(2)}</span>` +
+    `</div>`;
+  }).join('');
+  const legend = rows.some(r => r.overridden)
+    ? '<div class="estimate-note">* you set this dial higher that night.</div>'
+    : '';
+  el.innerHTML = rowsHtml + legend;
+}
+
+function render(i) {
+  const row = DATA[i];
+  const isOverridden = !!overrides[row.date];
+  const effectiveIndex = isOverridden ? overriddenIndex(row.index) : row.index;
+  document.getElementById('dayLabel').textContent = new Date(row.date+'T00:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('tempVal').textContent = row.temp_c;
+  document.getElementById('windVal').textContent = row.wind_kmh;
+  document.getElementById('indexVal').textContent = effectiveIndex + ' / 6';
+  document.getElementById('nudgeMessage').textContent = isOverridden
+    ? `You said it's colder tonight. Set your dial to ${effectiveIndex} instead of the forecast's ${row.index}.`
+    : row.message;
+  document.querySelector('.message-card .icon').textContent = INDEX_ICONS[effectiveIndex];
+
+  const overrideBtn = document.getElementById('overrideBtn');
+  const overrideText = document.getElementById('overrideText');
+  if (row.index >= 6) {
+    overrideBtn.disabled = true;
+    overrideBtn.classList.remove('active');
+    overrideBtn.textContent = "It's colder than this";
+    overrideText.textContent = "Tonight's at the top. Nothing higher to set.";
+  } else {
+    overrideBtn.disabled = false;
+    overrideBtn.classList.toggle('active', isOverridden);
+    overrideBtn.textContent = isOverridden ? 'Use the tip instead' : "It's colder than this";
+    overrideText.textContent = isOverridden
+      ? `You're seeing dial ${effectiveIndex}, not the forecast's dial ${row.index}.`
+      : 'Does it feel colder than this tonight?';
+  }
+
+  const tonight = tonightSavingGbp(effectiveIndex).toFixed(2);
+  document.getElementById('tonightSaving').textContent =
+    effectiveIndex < 6
+      ? `Set your dial to ${effectiveIndex} tonight instead of leaving it on max, and save about £${tonight}.`
+      : `Tonight's cold. It needs the top setting, so there's nothing to save tonight.`;
+
+  const week = weekSavingGbp(i).toFixed(2);
+  document.getElementById('weekSaving').textContent =
+    `AutoMagic could save you about £${week} this week. That's compared with a heater left on max each night.`;
+
+  setDial('', effectiveIndex, INDEX_COLORS[effectiveIndex]);
+
+  renderWeekList(i);
+
+  document.getElementById('scrub').value = i;
+  try { localStorage.setItem('automagic_demo_day', i); } catch(e) {}
+}
+
+let current = 14; // default: mid-January, a clear cold-night example
+try {
+  const saved = localStorage.getItem('automagic_demo_day');
+  if (saved !== null) current = parseInt(saved, 10);
+} catch(e) {}
+if (isNaN(current) || current < 0 || current >= DATA.length) current = 14;
+
+buildTicks('');
+buildTicks('Out');
+setDial('Out', OUTPUT_DEFAULT_POSITION, OUTPUT_COLOR); // static -- doesn't change with the date stepper
+render(current);
+
+document.getElementById('prevBtn').addEventListener('click', () => { current = Math.max(0, current-1); render(current); });
+document.getElementById('nextBtn').addEventListener('click', () => { current = Math.min(DATA.length-1, current+1); render(current); });
+document.getElementById('scrub').addEventListener('input', (e) => { current = parseInt(e.target.value,10); render(current); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') { current = Math.max(0, current-1); render(current); }
+  if (e.key === 'ArrowRight') { current = Math.min(DATA.length-1, current+1); render(current); }
+});
+
+// Run self-tests only after every piece of state above (overrides, DATA, current)
+// is actually initialised -- moved here after a real TDZ bug (self-tests firing
+// before 'let overrides' had run) was caught by the tests themselves failing loudly,
+// exactly as intended, rather than silently passing on incomplete state.
+if (typeof location !== 'undefined' && location.search.includes('selftest')) {
+  runSelfTests();
+}
+</script>
+</body>
+</html>

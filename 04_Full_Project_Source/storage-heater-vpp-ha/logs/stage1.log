@@ -1,0 +1,9 @@
+[0.0s] households: 4443
+[0.5s] rows used so far: 500 (seen 500)
+[1.0s] rows used so far: 1000 (seen 1000)
+[2.1s] rows used so far: 1500 (seen 8700)
+[2.6s] rows used so far: 2000 (seen 9200)
+[3.0s] rows used so far: 2500 (seen 9700)
+[4.2s] scan complete. rows seen=17520, rows used (Jan+Jul)=2975
+[4.3s] wrote data/intermediate/phase1_household_features_raw.csv
+STAGE1 DONE

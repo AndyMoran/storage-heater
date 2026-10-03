@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>NightDial — Storage Heater Advisor</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjogIk5pZ2h0RGlhbCIsICJzaG9ydF9uYW1lIjogIk5pZ2h0RGlhbCIsICJkaXNwbGF5IjogInN0YW5kYWxvbmUifQ==">
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --text: #1a2733;
+    --text-dim: #5b6b78;
+    --accent: #2b5d8c;
+    --accent-2: #e67e22;
+    --danger: #b0362c;
+    --border: #e1e6ea;
+    --dial-track: #dfe6ec;
+    --dial-face: #ffffff;
+    --shadow: 0 2px 12px rgba(20,30,40,0.08);
+    --index-1: #4a90d9;
+    --index-2: #5db67a;
+    --index-3: #a3c93c;
+    --index-4: #e0b93c;
+    --index-5: #e07b3c;
+    --index-6: #d94a4a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14191e;
+      --card-bg: #1e2530;
+      --text: #eef2f5;
+      --text-dim: #9aa7b2;
+      --accent: #6fa8d8;
+      --accent-2: #f0a15c;
+      --danger: #e08078;
+      --border: #2c3742;
+      --dial-track: #2c3742;
+      --dial-face: #232b36;
+      --shadow: 0 2px 16px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14191e; --card-bg: #1e2530; --text: #eef2f5; --text-dim: #9aa7b2;
+    --accent: #6fa8d8; --accent-2: #f0a15c; --danger: #e08078; --border: #2c3742; --dial-track: #2c3742;
+    --dial-face: #232b36; --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; display: flex; justify-content: center;
+  }
+  .app { width: 100%; max-width: 420px; padding: 20px 16px 40px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .brand { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.01em; }
+  .brand span { color: var(--accent-2); }
+  .badge { font-size: 0.68rem; color: var(--text-dim); border: 1px solid var(--border); border-radius: 20px; padding: 2px 9px; }
+  .subtitle { color: var(--text-dim); font-size: 0.85rem; margin: 2px 0 18px; }
+  .tagline { color: var(--accent-2); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin: 1px 0 0; }
+
+  .card { background: var(--card-bg); border-radius: 18px; box-shadow: var(--shadow); padding: 20px; margin-bottom: 14px; }
+
+  .evening-note { text-align: center; font-size: 0.78rem; color: var(--accent-2); font-weight: 600; margin: 0 0 2px; }
+  .tonight-date { text-align: center; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px; }
+
+  .dial-wrap { display: flex; justify-content: center; margin: 14px 0 6px; }
+  .dial-caption { text-align: center; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 4px; }
+  .dial-instruction { text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 2px 0 6px; }
+  .dial-note { font-size: 0.78rem; color: var(--text-dim); text-align: center; line-height: 1.4; margin-top: 4px; }
+  .dial-note b { color: var(--text); }
+
+  .message-card { display: flex; gap: 10px; align-items: flex-start; }
+  .message-card .icon { font-size: 1.4rem; line-height: 1.3; }
+  .message-card .message-text { display: flex; flex-direction: column; gap: 10px; }
+  .message-card p { margin: 0; font-size: 1rem; line-height: 1.45; }
+  .message-card p:empty { display: none; }
+
+  .weather-row { display: flex; justify-content: space-around; text-align: center; }
+  .weather-item .val { font-size: 1.25rem; font-weight: 700; }
+  .weather-item .lbl { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .footnote { font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-top: 18px; line-height: 1.5; }
+  .footnote b { color: var(--text); }
+
+  .savings-card { border-left: 3px solid var(--accent-2); }
+  .savings-card p { margin: 0; font-size: 0.95rem; line-height: 1.45; }
+  .estimate-note { font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
+
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .gear-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px; line-height: 1; }
+  .field-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+  .text-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+  .pill-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { border: 1px solid var(--border); border-radius: 20px; padding: 8px 16px; font-size: 0.9rem; cursor: pointer; user-select: none; }
+  .pill input { margin-right: 6px; }
+  .primary-btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 6px; }
+  .primary-btn:active { transform: scale(0.98); }
+  .primary-btn:disabled { opacity: 0.6; cursor: default; }
+  .skip-link { text-align: center; font-size: 0.85rem; color: var(--text-dim); margin-top: 14px; cursor: pointer; text-decoration: underline; }
+
+  .override-card p { margin: 0 0 10px; font-size: 0.95rem; }
+  .override-btn { width: 100%; background: none; border: 1.5px solid var(--accent-2); color: var(--accent-2); border-radius: 12px; padding: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .override-btn:active { transform: scale(0.98); }
+  .override-btn.active { background: var(--accent-2); color: #fff; }
+  .override-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .week-list { display: flex; flex-direction: column; }
+  .week-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  .week-row:last-child { border-bottom: none; }
+  .week-row.today { font-weight: 700; }
+  .week-row .wr-date { color: var(--text-dim); flex: 1; }
+  .week-row.today .wr-date { color: var(--text); }
+  .week-row .wr-dial { flex: 0 0 auto; margin: 0 10px; }
+  .week-row .wr-saving { flex: 0 0 auto; min-width: 48px; text-align: right; }
+  .week-list-empty { font-size: 0.85rem; color: var(--text-dim); text-align: center; padding: 6px 0; }
+
+  .outlook-strip { display: flex; justify-content: space-between; gap: 4px; }
+  .outlook-day { flex: 1; text-align: center; }
+  .outlook-day .od-label { font-size: 0.68rem; color: var(--text-dim); margin-bottom: 4px; }
+  .outlook-day .od-index { font-size: 1rem; font-weight: 700; }
+  .outlook-fade-1 { opacity: 0.85; } .outlook-fade-2 { opacity: 0.7; }
+  .outlook-fade-3 { opacity: 0.55; } .outlook-fade-4 { opacity: 0.4; }
+
+  .banner { border-radius: 14px; padding: 14px; margin-bottom: 14px; font-size: 0.88rem; line-height: 1.4; }
+  .banner-danger { background: color-mix(in srgb, var(--danger) 12%, var(--card-bg)); border: 1px solid var(--danger); color: var(--text); }
+  .banner button { margin-top: 8px; background: var(--danger); color: #fff; border: none; border-radius: 10px; padding: 8px 14px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+  .loading-note { text-align: center; color: var(--text-dim); font-size: 0.9rem; padding: 30px 0; }
+  [hidden] { display: none !important; }
+  .proto-banner {
+    background: #3a3018; border: 1px solid #6b5726; color: #e8c877;
+    border-radius: 10px; padding: 10px 12px; font-size: 0.76rem; line-height: 1.45;
+    margin-bottom: 16px;
+  }
+  .proto-banner strong { color: #f6dd9a; }
+  .proto-banner a { color: #f6dd9a; }
+</style>
+</head>
+<body>
+<div class="app" id="onboardingScreen" style="display:none">
+  <div class="proto-banner">
+    <strong>Research prototype</strong> — not for real tenant use yet. Part of an independent research
+    project on storage heaters, housing associations and virtual power plants. Feedback from housing
+    associations and local authorities is very welcome:
+    <a href="mailto:andrewgmoran@gmail.com?subject=NightDial%20feedback">andrewgmoran@gmail.com</a>.
+  </div>
+  <div class="topbar">
+    <div class="brand">Night <span>Dial</span></div>
+  </div>
+  <div class="tagline">Storage Heating, Made Smarter</div>
+  <div class="subtitle" id="onboardingSubtitle">A few quick details so your advice fits your home.</div>
+
+  <div class="card">
+    <label class="field-label" for="settingsPostcode">Where's your home? (postcode)</label>
+    <input type="text" id="settingsPostcode" class="text-input" placeholder="e.g. SE1 7PB" autocomplete="postal-code">
+    <div class="estimate-note">Used to fetch your local forecast — sent to our weather provider (Open-Meteo) to look up your area. Never stored by us, never shared beyond that.</div>
+  </div>
+
+  <div class="card">
+    <div class="field-label">What's the highest number on your heater's input dial?</div>
+    <div class="pill-group">
+      <label class="pill"><input type="radio" name="settingsDialMax" value="5"> 5</label>
+      <label class="pill"><input type="radio" name="settingsDialMax" value="6"> 6</label>
+    </div>
+    <div class="estimate-note">Most legacy storage heaters go up to 6 — check yours if you're not sure. NightDial doesn't adjust the dial numbers to this yet, but we're saving it for when it does.</div>
+  </div>
+
+  <div class="card">
+    <div class="field-label">Are you on an Economy 7 (cheap night-rate) tariff?</div>
+    <div class="pill-group">
+      <label class="pill"><input type="radio" name="settingsTariff" value="e7"> Yes</label>
+      <label class="pill"><input type="radio" name="settingsTariff" value="other"> No</label>
+      <label class="pill"><input type="radio" name="settingsTariff" value="unsure"> Not sure</label>
+    </div>
+  </div>
+
+  <button id="settingsSaveBtn" class="primary-btn">Get started</button>
+  <div id="skipLink" class="skip-link" hidden>Skip for now</div>
+  <div id="resetDemoLink" class="skip-link">Reset my data</div>
+</div>
+
+<div class="app" id="mainScreen" style="display:none">
+  <div class="proto-banner">
+    <strong>Research prototype</strong> — not for real tenant use yet. Part of an independent research
+    project on storage heaters, housing associations and virtual power plants. Feedback from housing
+    associations and local authorities is very welcome:
+    <a href="mailto:andrewgmoran@gmail.com?subject=NightDial%20feedback">andrewgmoran@gmail.com</a>.
+  </div>
+  <div class="topbar">
+    <div class="brand">Night <span>Dial</span></div>
+    <div class="topbar-right">
+      <button id="settingsBtn" class="gear-btn" aria-label="Settings">⚙️</button>
+      <div class="badge">LIVE FORECAST</div>
+    </div>
+  </div>
+  <div class="subtitle">Tonight's storage heater advice, from your local forecast.</div>
+
+  <div id="errorBanner" class="banner banner-danger" hidden>
+    <span id="errorBannerText"></span>
+    <br><button id="retryBtn">Try again</button>
+  </div>
+
+  <div id="loadingNote" class="loading-note" hidden>Fetching tonight's forecast…</div>
+
+  <div id="tonightContent" hidden>
+    <div class="card">
+      <div class="evening-note">🕗 Tonight's charge — set by 20:00</div>
+      <div class="tonight-date" id="tonightDate">—</div>
+      <div class="dial-caption">Input dial — how much heat to store overnight</div>
+      <div class="dial-instruction">Set Input dial to:</div>
+      <div class="dial-wrap">
+        <svg id="dial" width="220" height="180" viewBox="0 0 220 180">
+          <path d="M 48.9 160.8 A 62 62 0 0 1 171.1 160.8" fill="none" stroke="var(--dial-track)" stroke-width="10" stroke-linecap="round"/>
+          <g id="ticks"></g>
+          <g id="pointer">
+            <line x1="110" y1="150" x2="110" y2="90" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <circle cx="110" cy="150" r="10" fill="var(--text)"/>
+          <text id="dialNumber" x="110" y="145" font-size="26" font-weight="800" text-anchor="middle" fill="var(--card-bg)"></text>
+        </svg>
+      </div>
+      <div class="dial-note">This changes every night with the forecast — that's the whole point of NightDial.</div>
+    </div>
+
+    <div class="card message-card">
+      <div class="icon" id="nudgeIcon">💬</div>
+      <div class="message-text">
+        <p id="nudgeMessage">—</p>
+        <p id="nudgeMessageReminder"></p>
+      </div>
+    </div>
+
+    <div class="card savings-card">
+      <p>💷 <span id="tonightSaving">—</span></p>
+      <div class="estimate-note" id="offSeasonNote" hidden>Most homes won't have their storage heater switched on yet at this time of year — this is what tonight's forecast would suggest once yours is.</div>
+    </div>
+
+    <div class="card savings-card" id="weekSavingCard" hidden>
+      <p>📅 <span id="weekSaving">—</span></p>
+      <div class="estimate-note">Illustrative — based on the tips, not a record of what happened.</div>
+    </div>
+
+    <div class="card">
+      <div class="dial-caption">Coming nights (forecast only, not a setting)</div>
+      <div id="outlookStrip" class="outlook-strip"></div>
+      <div class="estimate-note">These get less certain the further out they are — only tonight's number is ever something to act on.</div>
+    </div>
+
+    <div class="card">
+      <div class="dial-caption">Output dial — how fast stored heat is released</div>
+      <div class="dial-wrap">
+        <svg id="dialOut" width="220" height="180" viewBox="0 0 220 180">
+          <path d="M 48.9 160.8 A 62 62 0 0 1 171.1 160.8" fill="none" stroke="var(--dial-track)" stroke-width="10" stroke-linecap="round"/>
+          <g id="ticksOut"></g>
+          <g id="pointerOut">
+            <line x1="110" y1="150" x2="110" y2="90" stroke="var(--text)" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <circle cx="110" cy="150" r="10" fill="var(--text)"/>
+          <text id="dialNumberOut" x="110" y="145" font-size="26" font-weight="800" text-anchor="middle" fill="var(--card-bg)"></text>
+        </svg>
+      </div>
+      <div class="dial-note">Keep this low — <b>only turn it up if the room actually feels cold</b>. Always turn it down to its lowest number before bed, so tonight's stored heat isn't wasted overnight. This is general guidance, not a forecast — NightDial doesn't calculate a daily output setting.</div>
+    </div>
+
+    <div class="card override-card">
+      <p id="overrideText">Does it feel colder than this tonight?</p>
+      <button id="overrideBtn" class="override-btn">It's colder than this</button>
+      <div class="estimate-note">This bumps tonight's dial suggestion up by one. It resets tomorrow — it doesn't change the forecast.</div>
+    </div>
+
+    <div class="card">
+      <div class="dial-caption">Your recent nights</div>
+      <div id="weekList" class="week-list"></div>
+      <div class="estimate-note">Builds up from when you started using NightDial — nothing is backfilled.</div>
+    </div>
+
+    <div class="card">
+      <div class="weather-row">
+        <div class="weather-item"><div class="val" id="tempVal">—</div><div class="lbl">Temp (°C)</div></div>
+        <div class="weather-item"><div class="val" id="windVal">—</div><div class="lbl">Wind (km/h)</div></div>
+        <div class="weather-item"><div class="val" id="indexVal">—</div><div class="lbl">Dial Setting</div></div>
+      </div>
+    </div>
+
+    <div class="footnote">
+      Tonight's temperature and wind come from a live forecast (Open-Meteo), fetched for your postcode.
+      <br><b>The dial calibration is now real</b> — a population-calibrated table built from 42 confirmed
+      storage-heater households' actual 2013 usage (<code>data/intermediate/phase2_index_calibration.parquet</code>),
+      not evenly-spaced guesses. But that source data is from 2013: it predates both the 2021+ energy-price
+      crisis that has driven fuel poverty sharply higher, and Awaab's Law's excess-cold rules for social
+      landlords (from 30 Nov 2026). A 2013 household could afford to charge more freely than many 2026
+      tenants can — so this calibration may understate real cold-related risk, not overstate it.
+      <br><b>The £ savings figures use real electricity rates</b> and a real savings ramp calibrated the
+      same way, but still assume a typical heater size, not your own. They'll get more accurate once we
+      know more about your setup.
+      <br>Everything shown here — your settings, your recent-nights history — stays on this device only.
+      Nothing is sent anywhere except the coordinates needed to fetch the forecast.
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// Dial rendering (unchanged from the demo prototype -- pure SVG geometry,
+// no dependency on where the index number comes from).
+// =====================================================================
+const INDEX_COLORS = {1:'var(--index-1)',2:'var(--index-2)',3:'var(--index-3)',4:'var(--index-4)',5:'var(--index-5)',6:'var(--index-6)'};
+const INDEX_ICONS = {1:'🌤️',2:'⛅',3:'🌥️',4:'🌦️',5:'🌧️',6:'❄️'};
+const PIVOT = {x: 110, y: 150};
+const N_POSITIONS = 6;
+function rotationForIndex(i) { return -100 + (i - 1) / (N_POSITIONS - 1) * 200; }
+function svgRotate(px, py, cx, cy, thetaDeg) {
+  const theta = thetaDeg * Math.PI / 180;
+  const dx = px - cx, dy = py - cy;
+  return { x: cx + dx * Math.cos(theta) - dy * Math.sin(theta), y: cy + dx * Math.sin(theta) + dy * Math.cos(theta) };
+}
+function buildTicks(suffix) {
+  const g = document.getElementById('ticks' + suffix);
+  g.innerHTML = '';
+  for (let i = 1; i <= N_POSITIONS; i++) {
+    const rot = rotationForIndex(i);
+    const p = svgRotate(110, 96, 110, 150, rot);
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', p.x); text.setAttribute('y', p.y);
+    text.setAttribute('font-size', '13'); text.setAttribute('font-weight', '700');
+    text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', 'var(--text-dim)');
+    text.textContent = i;
+    g.appendChild(text);
+  }
+}
+function setDial(suffix, index, color) {
+  const rot = rotationForIndex(index);
+  document.getElementById('pointer' + suffix).setAttribute('transform', `rotate(${rot} 110 150)`);
+  document.getElementById('pointer' + suffix).querySelector('line').setAttribute('stroke', color);
+  document.getElementById('dialNumber' + suffix).textContent = index;
+}
+
+// =====================================================================
+// Physics: wind-chill-adjusted heat-loss proxy, ported verbatim from
+// src/thermal_forecast.py (Phase 2.1) -- same formula, same validated
+// range guard, same constants. This is real, checked physics (the
+// JAG/TI 2001 wind chill formula, the UK Met Office / Environment
+// Canada / US NWS standard), not something invented for this app.
+// =====================================================================
+const BASE_TEMP_C = 15.5; // identical to Phase 1's overcharge_test.py -- reused deliberately, not re-derived
+const WIND_CHILL_MAX_TEMP_C = 10.0;
+const WIND_CHILL_MIN_WIND_KMH = 4.8;
+
+function windChillTempC(tempC, windKmh) {
+  if (tempC > WIND_CHILL_MAX_TEMP_C || windKmh < WIND_CHILL_MIN_WIND_KMH) return tempC;
+  const v16 = Math.pow(windKmh, 0.16);
+  return 13.12 + 0.6215 * tempC - 11.37 * v16 + 0.3965 * tempC * v16;
+}
+function heatLossProxy(tempC, windKmh) {
+  return Math.max(0, BASE_TEMP_C - windChillTempC(tempC, windKmh));
+}
+
+// =====================================================================
+// REAL Target Charge Index calibration (2026-09-03), replacing the
+// evenly-spaced placeholder. Built by running the project's own
+// src/target_charge_index.py (unmodified) end to end against
+// LCL_2013.csv: 42 confirmed storage-heater households (S_night detector,
+// evidence_map.md 2026-08-31), 36 classified 'seasonal', each with its own
+// fitted response line refit against the wind-chill-adjusted v2 proxy
+// (13,102 real household-nights, median R²=0.706 -- matches the
+// previously-logged v1 figure of 0.70 closely). Quantile-binned into 6
+// bands from the pooled real relative-charge distribution -- these
+// boundaries are genuinely uneven (0.70, 2.25, 6.44, 11.82, 16.18), not
+// round numbers, because they come from where the real data splits.
+//
+// The household-detection method itself (S_night gap search) had to be
+// reconstructed from evidence_map.md's documented method rather than
+// re-run verbatim -- the original notebook was never exported to src/.
+// The reconstruction reproduced the previously-logged 43-household result
+// to within 1 household (42 found; 36 seasonal vs. 37, both flagged cases
+// exact) using an algorithmically-rediscovered gap (0.655->0.695 vs. the
+// documented 0.655->0.696), not a threshold tuned to match -- see
+// evidence_map.md, 2026-09-03, for the full reconciliation.
+//
+// STILL A REAL, PERMANENT LIMITATION, not fixed by this calibration:
+// LCL_2013.csv is 2013 data. It predates both the 2021+ energy-price
+// crisis (fuel poverty has since risen substantially -- ~9.0M UK
+// households by 2024 vs. a materially lower 2013 baseline) and Awaab's Law
+// Phase 2 (excess cold becomes a legally enforceable hazard for social
+// landlords from 30 Nov 2026). A 2013 household's overnight charging
+// reflects a less cost-constrained decision than a 2026 fuel-poor tenant's
+// would -- this calibration may understate real cold-related risk in a way
+// that matters specifically for excess-cold compliance. See the footnote
+// below and evidence_map.md, 2026-09-02, "LCL_2013.csv confirmed present"
+// entry.
+// =====================================================================
+const TARGET_CHARGE_INDEX_BOUNDARIES = [0.7000, 2.2500, 6.4427, 11.8157, 16.1790];
+function heatLossProxyToIndex(proxy) {
+  let band = 1;
+  for (const b of TARGET_CHARGE_INDEX_BOUNDARIES) {
+    if (proxy > b) band++;
+  }
+  return band;
+}
+
+// =====================================================================
+// Nudge copy, ported verbatim from config/phase2_nudge_copy.py -- same
+// wording the real project settled on (register: plain, short, second
+// person, per PROJECT.md Part 8 Section 20), not rewritten for this app.
+// =====================================================================
+const CHARGE_LEVEL_TEMPLATES = {
+  1: "Tonight's mild. Turn your heater's input dial right down to 1.",
+  2: "A mild night ahead. Set your heater's input dial to 2.",
+  3: "A cool night. Set your heater's input dial to 3.",
+  4: "Getting colder. Set your heater's input dial to 4.",
+  5: "A cold night ahead. Set your heater's input dial to 5.",
+  6: "A very cold night. Set your heater's input dial to 6, the top setting.",
+};
+const OUTPUT_DIAL_REMINDER = "Before bed, turn your output dial right down too, to its lowest number. This saves tonight's heat for tomorrow.";
+
+// Off-season caveat (2026-09-03): during mild-weather live testing, the
+// app correctly recommends the lowest charge and shows the (correctly
+// computed) saving that implies -- but nobody actually has their storage
+// heater switched on to bank that saving yet. Rather than hide or change
+// the number, show a small note alongside it at the mildest index only.
+// Deliberately index 1 only, not 1-2: index 1 is the strong "this reads
+// as summer" signal, whereas index 2 nights do occur in genuine shoulder
+// season (April, October) when heaters may well still be in use.
+const OFF_SEASON_INDEX_THRESHOLD = 1;
+
+// =====================================================================
+// Savings estimate -- cost basis wired to real, sourced rates (2026-09-03,
+// see evidence_map.md). Two things are still assumptions, both documented
+// there rather than hidden:
+//
+// 1. CHARGE_KWH_PER_FULL_NIGHT: no per-heater or per-household kWh figure
+//    exists anywhere in this project's evidence base (the LCL data is
+//    whole-household demand, not per-appliance -- see the household-vs-
+//    per-heater limitation logged 2026-09-02). This uses a published
+//    typical full-size legacy storage heater (3.4kW -- electricheatingcosts.com)
+//    run for the standard Economy 7 off-peak window (7 hours -- Ofgem's
+//    Economy 7 consumer guide): 3.4kW x 7h = 23.8kWh. It's an illustrative
+//    typical-heater figure, not a measurement of any specific tenant's
+//    setup or home.
+// 2. SAVING_FRACTION_BY_INDEX: now the REAL calibrated ramp (2026-09-03),
+//    not the evenly-spaced placeholder. For indices 1-5, each figure is
+//    1 minus that band's real mean relative_charge (the confirmed
+//    households' own modelled requirement, normalized 0-1 by each
+//    household's coldest-night figure) -- i.e. how much less a typical
+//    night in that band needs versus that household's own worst case,
+//    pooled across 13,102 real household-nights. Index 6 stays a
+//    tautological 0.00 by construction, not a calibration output: index 6
+//    IS "leave it on max" (the app's own comparison baseline), so there is
+//    nothing to save by definition regardless of what the underlying data
+//    shows for a typical band-6 night specifically.
+//
+// The unit rates ARE real: Ecotricity's official London Direct Debit
+// tariff sheet, effective 1 April 2026 (evidence_map.md 2026-09-02,
+// cross-checked again 2026-09-03). Economy 7 tenants pay the cheap night
+// rate; tenants who said "No" or "Not sure" are costed at the standard
+// single-rate tariff instead, per Andy's decision 2026-09-03 -- still a
+// real number, just a less favourable one, since they don't get an
+// off-peak discount to begin with.
+// =====================================================================
+const CHARGE_KWH_PER_FULL_NIGHT = 23.8;
+const UNIT_RATE_GBP_PER_KWH = {
+  e7: 0.1873,      // Economy 7 night rate
+  other: 0.2913,   // Standard single-rate (Green Electricity Standard Variable)
+  unsure: 0.2913,  // Same as 'other' -- fail-safe to the non-discounted rate, not the cheaper one
+};
+const SAVING_FRACTION_BY_INDEX = {1: 0.9018, 2: 0.7973, 3: 0.6721, 4: 0.4820, 5: 0.3183, 6: 0.00};
+function currentTariff() {
+  const s = loadSettings() || {};
+  return s.tariff || 'e7';
+}
+function fullNightCostGbp(tariff) {
+  const rate = Object.prototype.hasOwnProperty.call(UNIT_RATE_GBP_PER_KWH, tariff)
+    ? UNIT_RATE_GBP_PER_KWH[tariff]
+    : UNIT_RATE_GBP_PER_KWH.unsure;
+  return CHARGE_KWH_PER_FULL_NIGHT * rate;
+}
+function tonightSavingGbp(index, tariff) {
+  const t = tariff !== undefined ? tariff : currentTariff();
+  return fullNightCostGbp(t) * SAVING_FRACTION_BY_INDEX[index];
+}
+function overriddenIndex(baseIndex) {
+  return Math.min(N_POSITIONS, baseIndex + 1);
+}
+
+// =====================================================================
+// Local date handling -- deliberately NOT toISOString().slice(0,10),
+// which reports the UTC day. The UK is UTC+0 or UTC+1 (BST), never
+// negative, so toISOString would misreport "today" as yesterday for the
+// first hour after midnight during BST. Use the browser's own local
+// date components instead.
+// =====================================================================
+function localDateStr(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// =====================================================================
+// Local history log -- the ONLY record of past nights, per the
+// localStorage-only architecture decision (evidence_map.md, 2026-09-02).
+// One entry per real night, written as it happens; nothing is
+// backfilled. Pruned to a bounded window since localStorage is
+// origin-capped (~5-10MB).
+// =====================================================================
+const HISTORY_KEY = 'nightdial_history';
+const HISTORY_MAX_NIGHTS = 90;
+const SETTINGS_KEY = 'nightdial_settings';
+
+// One-time migration, 2026-09-03: storage keys were named after the old
+// "AutoMagic" working title before the app was renamed to NightDial.
+// Migrates any existing data forward under the new key names rather than
+// silently discarding a tenant's (or, right now, a tester's) real history,
+// then cleans up the old keys so nothing is left duplicated.
+(function migrateOldStorageKeys() {
+  try {
+    const oldHistory = localStorage.getItem('automagic_history');
+    if (oldHistory !== null && localStorage.getItem(HISTORY_KEY) === null) {
+      localStorage.setItem(HISTORY_KEY, oldHistory);
+    }
+    const oldSettings = localStorage.getItem('automagic_settings');
+    if (oldSettings !== null && localStorage.getItem(SETTINGS_KEY) === null) {
+      localStorage.setItem(SETTINGS_KEY, oldSettings);
+    }
+    localStorage.removeItem('automagic_history');
+    localStorage.removeItem('automagic_settings');
+  } catch (e) {}
+})();
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function saveHistory(h) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch (e) {}
+}
+function pruneHistory(h, maxNights) {
+  const dates = Object.keys(h).sort();
+  while (dates.length > maxNights) {
+    delete h[dates.shift()];
+  }
+  return h;
+}
+let history = loadHistory();
+
+function effectiveIndexFor(entry) {
+  return entry.overridden ? overriddenIndex(entry.forecastIndex) : entry.forecastIndex;
+}
+
+// buildWeekRows/weekSavingGbp: weekSavingGbp DELIBERATELY delegates to
+// buildWeekRows rather than re-deriving its own total -- a real bug was
+// caught in the demo prototype (2026-09-02) from exactly this kind of
+// duplication (a headline total silently disagreeing with the list
+// underneath it once an override was involved). Not repeating that here.
+function buildWeekRows() {
+  const dates = Object.keys(history).sort();
+  const recent = dates.slice(-7);
+  const todayStr = localDateStr(new Date());
+  return recent.map(date => {
+    const entry = history[date];
+    const index = effectiveIndexFor(entry);
+    return {
+      date,
+      index,
+      forecastIndex: entry.forecastIndex,
+      overridden: !!entry.overridden,
+      saving: tonightSavingGbp(index),
+      isToday: date === todayStr,
+    };
+  });
+}
+function weekSavingGbp() {
+  return buildWeekRows().reduce((sum, r) => sum + r.saving, 0);
+}
+
+function renderWeekList() {
+  const rows = buildWeekRows();
+  const el = document.getElementById('weekList');
+  if (!rows.length) {
+    el.innerHTML = '<div class="week-list-empty">No nights recorded yet.</div>';
+    return;
+  }
+  const rowsHtml = rows.map(r => {
+    const d = new Date(r.date + 'T00:00:00').toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+    const label = r.isToday ? `${d} (tonight)` : d;
+    const mark = r.overridden ? ' *' : '';
+    return `<div class="week-row${r.isToday ? ' today' : ''}">` +
+      `<span class="wr-date">${label}</span>` +
+      `<span class="wr-dial" style="color:${INDEX_COLORS[r.index]}">${INDEX_ICONS[r.index]} ${r.index}${mark}</span>` +
+      `<span class="wr-saving">£${r.saving.toFixed(2)}</span>` +
+    `</div>`;
+  }).join('');
+  const legend = rows.some(r => r.overridden)
+    ? '<div class="estimate-note">* you set this dial higher that night.</div>'
+    : '';
+  el.innerHTML = rowsHtml + legend;
+}
+
+function renderOutlookStrip(futureDays) {
+  const el = document.getElementById('outlookStrip');
+  el.innerHTML = futureDays.map((d, i) => {
+    const idx = heatLossProxyToIndex(heatLossProxy(d.temp_c, d.wind_kmh));
+    const label = new Date(d.date + 'T00:00:00').toLocaleDateString('en-GB', {weekday:'short'});
+    const fadeClass = 'outlook-fade-' + Math.min(4, i + 1);
+    return `<div class="outlook-day ${fadeClass}">` +
+      `<div class="od-label">${label}</div>` +
+      `<div class="od-index" style="color:${INDEX_COLORS[idx]}">${INDEX_ICONS[idx]} ${idx}</div>` +
+    `</div>`;
+  }).join('');
+}
+
+// =====================================================================
+// Settings / onboarding
+// =====================================================================
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveSettings(s) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) {}
+}
+function populateSettingsForm(settings) {
+  document.getElementById('settingsPostcode').value = settings.postcode || '';
+  const dm = settings.dialMax || '6';
+  const dmEl = document.querySelector(`input[name="settingsDialMax"][value="${dm}"]`);
+  if (dmEl) dmEl.checked = true;
+  const tf = settings.tariff || 'e7';
+  const tfEl = document.querySelector(`input[name="settingsTariff"][value="${tf}"]`);
+  if (tfEl) tfEl.checked = true;
+}
+function showOnboarding(isFirstRun) {
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('onboardingScreen').style.display = 'block';
+  document.getElementById('skipLink').hidden = !isFirstRun;
+  document.getElementById('onboardingSubtitle').textContent = isFirstRun
+    ? "A few quick details so your advice fits your home."
+    : "Update your details below.";
+  document.getElementById('settingsSaveBtn').textContent = isFirstRun ? 'Get started' : 'Save';
+}
+function showMainScreenView() {
+  document.getElementById('onboardingScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'block';
+  loadTonight();
+}
+function saveSettingsAndContinue() {
+  const postcode = document.getElementById('settingsPostcode').value.trim();
+  const dialMaxEl = document.querySelector('input[name="settingsDialMax"]:checked');
+  const tariffEl = document.querySelector('input[name="settingsTariff"]:checked');
+  const prev = loadSettings() || {};
+  const postcodeChanged = (prev.postcode || '') !== postcode;
+  const settings = {
+    postcode,
+    dialMax: dialMaxEl ? dialMaxEl.value : '6',
+    tariff: tariffEl ? tariffEl.value : 'e7',
+    lat: postcodeChanged ? null : prev.lat,
+    lon: postcodeChanged ? null : prev.lon,
+  };
+  saveSettings(settings);
+  showMainScreenView();
+}
+function skipOnboarding() {
+  saveSettings({ postcode: '', dialMax: '6', tariff: 'e7', lat: null, lon: null });
+  showMainScreenView();
+}
+function resetMyData() {
+  try {
+    localStorage.removeItem(SETTINGS_KEY);
+    localStorage.removeItem(HISTORY_KEY);
+  } catch (e) {}
+  history = {};
+  populateSettingsForm({});
+  showOnboarding(true);
+}
+
+// =====================================================================
+// Live forecast: geocoding + forecast fetch (Open-Meteo, both free,
+// unauthenticated, public endpoints). Could not be execute-tested from
+// within this build session -- every available tool sandbox here (device
+// shell, cloud shell, cloud browser) sits behind an egress allowlist that
+// blocks api.open-meteo.com (confirmed directly, not assumed: curl
+// returned "blocked-by-allowlist" from all three). That's a restriction
+// on THIS SESSION'S tool access, not evidence the real app can't reach
+// it -- a phone's own browser has no such proxy. Needs a real-world test
+// on an actual device before trusting this in front of a tenant.
+// =====================================================================
+// UK_POSTCODE_SHAPE: a cheap prefilter, not a full Royal Mail validator --
+// just enough to tell "looks like a postcode" from "looks like a typed
+// town name" so we know which lookup to try first. postcodes.io does the
+// real validation.
+const UK_POSTCODE_SHAPE = /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/;
+
+// 2026-09-03 fix, found via a real live test (see evidence_map.md): Open-
+// Meteo's geocoding API is a place-name search, not a full UK postcode
+// database (it's GeoNames-backed, which doesn't carry unit-level Royal
+// Mail/ONSPD postcode data) -- a real postcode like "SK23 7NX" came back
+// "couldn't find a location" even though it's a perfectly valid address.
+// Fixed by trying postcodes.io first (a free, unauthenticated, open-data
+// UK postcode-to-coordinates API built on the ONS Postcode Directory)
+// when the input looks like a postcode, falling back to Open-Meteo's
+// name search otherwise -- which still handles a typed town name, or the
+// no-postcode-given default of "London, UK".
+async function geocodePostcode(postcode) {
+  const raw = postcode && postcode.trim() ? postcode.trim() : '';
+  if (raw) {
+    const normalized = raw.replace(/\s+/g, '').toUpperCase();
+    if (UK_POSTCODE_SHAPE.test(normalized)) {
+      const pcRes = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(normalized)}`);
+      if (pcRes.ok) {
+        const pcData = await pcRes.json();
+        if (pcData.result && typeof pcData.result.latitude === 'number') {
+          return { lat: pcData.result.latitude, lon: pcData.result.longitude, label: pcData.result.postcode || raw };
+        }
+      }
+      // Postcode-shaped but postcodes.io still couldn't resolve it (e.g.
+      // a 404 for a genuinely non-existent postcode) -- fall through to
+      // the name search below rather than failing immediately.
+    }
+  }
+  const query = raw || 'London, UK';
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&country=GB&language=en&format=json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`geocoding request failed (${res.status})`);
+  const data = await res.json();
+  if (!data.results || !data.results.length) throw new Error(`couldn't find a location for "${query}"`);
+  const r = data.results[0];
+  return { lat: r.latitude, lon: r.longitude, label: r.name };
+}
+
+async function fetchForecastDays(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&daily=temperature_2m_mean,wind_speed_10m_mean&timezone=auto&forecast_days=7`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`forecast request failed (${res.status})`);
+  const data = await res.json();
+  if (!data.daily || !data.daily.time) throw new Error('forecast response missing daily data');
+  return data.daily.time.map((date, i) => ({
+    date,
+    temp_c: data.daily.temperature_2m_mean[i],
+    wind_kmh: data.daily.wind_speed_10m_mean[i],
+  }));
+}
+
+// =====================================================================
+// Orchestration
+// =====================================================================
+let lastKnownWeatherForToday = null; // {temp_c, wind_kmh} or null -- kept so toggling the
+                                      // override doesn't need to refetch or blank the weather row
+
+function showLoading(isLoading) {
+  document.getElementById('loadingNote').hidden = !isLoading;
+}
+function showError(message) {
+  document.getElementById('errorBanner').hidden = false;
+  document.getElementById('errorBannerText').textContent = message;
+}
+function hideError() {
+  document.getElementById('errorBanner').hidden = true;
+}
+
+async function loadTonight() {
+  hideError();
+  showLoading(true);
+  document.getElementById('tonightContent').hidden = true;
+  const settings = loadSettings() || {};
+  try {
+    let lat = settings.lat, lon = settings.lon;
+    if (lat == null || lon == null) {
+      const geo = await geocodePostcode(settings.postcode);
+      lat = geo.lat; lon = geo.lon;
+      settings.lat = lat; settings.lon = lon;
+      saveSettings(settings);
+    }
+    const days = await fetchForecastDays(lat, lon);
+    if (!days.length) throw new Error('no forecast data returned');
+    renderTonightSuccess(days);
+  } catch (err) {
+    renderTonightFailsafe(err);
+  } finally {
+    showLoading(false);
+    document.getElementById('tonightContent').hidden = false;
+  }
+}
+
+function renderTonightSuccess(days) {
+  const todayStr = localDateStr(new Date());
+  const today = days.find(d => d.date === todayStr) || days[0];
+  const proxy = heatLossProxy(today.temp_c, today.wind_kmh);
+  const forecastIndex = heatLossProxyToIndex(proxy);
+
+  const existing = history[todayStr];
+  history[todayStr] = {
+    date: todayStr,
+    forecastIndex,
+    overridden: existing ? existing.overridden : false,
+  };
+  pruneHistory(history, HISTORY_MAX_NIGHTS);
+  saveHistory(history);
+
+  lastKnownWeatherForToday = { temp_c: today.temp_c, wind_kmh: today.wind_kmh };
+  renderTonightFromEntry(history[todayStr]);
+  renderOutlookStrip(days.filter(d => d.date !== todayStr).slice(0, 4));
+}
+
+function renderTonightFailsafe(err) {
+  // FAIL-SAFE, matching config/phase3_control_config.py's own principle
+  // (FAILSAFE_CHARGE_FRACTION = 1.0: a missing forecast charges as if
+  // coldest, never skips charging) -- applied here to advice rather than
+  // a relay: if the forecast can't be reached, default to the safe/warm
+  // recommendation (index 6) rather than leaving no guidance, or worse, a
+  // falsely-mild one. Does NOT overwrite an already-recorded real
+  // forecast for today -- only fills in when nothing real exists yet.
+  const todayStr = localDateStr(new Date());
+  if (!history[todayStr]) {
+    history[todayStr] = { date: todayStr, forecastIndex: N_POSITIONS, overridden: false, isFailsafe: true };
+    pruneHistory(history, HISTORY_MAX_NIGHTS);
+    saveHistory(history);
+  }
+  lastKnownWeatherForToday = null;
+  showError(`Couldn't reach the weather service, so tonight defaults to the safe setting until we can check again. (${err.message})`);
+  renderTonightFromEntry(history[todayStr]);
+  document.getElementById('outlookStrip').innerHTML = '<div class="estimate-note">Outlook unavailable right now.</div>';
+}
+
+function renderTonightFromEntry(entry) {
+  const effectiveIndex = effectiveIndexFor(entry);
+  const isOverridden = !!entry.overridden;
+
+  document.getElementById('tonightDate').textContent = new Date(entry.date + 'T00:00:00')
+    .toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+
+  if (lastKnownWeatherForToday) {
+    document.getElementById('tempVal').textContent = lastKnownWeatherForToday.temp_c.toFixed(1);
+    document.getElementById('windVal').textContent = lastKnownWeatherForToday.wind_kmh.toFixed(1);
+  } else {
+    document.getElementById('tempVal').textContent = '—';
+    document.getElementById('windVal').textContent = '—';
+  }
+  document.getElementById('indexVal').textContent = effectiveIndex + ' / 6';
+
+  document.getElementById('nudgeIcon').textContent = INDEX_ICONS[effectiveIndex];
+  // Two separate paragraphs (2026-09-03), not one concatenated string --
+  // the charge-tonight instruction and the before-bed output-dial
+  // reminder are two different actions at two different times, and read
+  // more clearly split apart than run together.
+  document.getElementById('nudgeMessage').textContent = isOverridden
+    ? `You said it's colder tonight. Set your dial to ${effectiveIndex} instead of the forecast's ${entry.forecastIndex}.`
+    : CHARGE_LEVEL_TEMPLATES[effectiveIndex];
+  document.getElementById('nudgeMessageReminder').textContent = isOverridden ? '' : OUTPUT_DIAL_REMINDER;
+
+  const overrideBtn = document.getElementById('overrideBtn');
+  const overrideText = document.getElementById('overrideText');
+  if (entry.forecastIndex >= N_POSITIONS) {
+    overrideBtn.disabled = true;
+    overrideBtn.classList.remove('active');
+    overrideBtn.textContent = "It's colder than this";
+    overrideText.textContent = "Tonight's at the top. Nothing higher to set.";
+  } else {
+    overrideBtn.disabled = false;
+    overrideBtn.classList.toggle('active', isOverridden);
+    overrideBtn.textContent = isOverridden ? 'Use the tip instead' : "It's colder than this";
+    overrideText.textContent = isOverridden
+      ? `You're seeing dial ${effectiveIndex}, not the forecast's dial ${entry.forecastIndex}.`
+      : 'Does it feel colder than this tonight?';
+  }
+
+  const tonight = tonightSavingGbp(effectiveIndex).toFixed(2);
+  document.getElementById('tonightSaving').textContent =
+    effectiveIndex < N_POSITIONS
+      ? `Set your dial to ${effectiveIndex} tonight instead of leaving it on max, and save about £${tonight}.`
+      : `Tonight's cold. It needs the top setting, so there's nothing to save tonight.`;
+  document.getElementById('offSeasonNote').hidden = effectiveIndex !== OFF_SEASON_INDEX_THRESHOLD;
+
+  // Week-total card only makes sense once there's more than one night to
+  // sum -- with a single night recorded, the "week" total is trivially
+  // identical to tonight's own number and just reads as a confusing
+  // repeat, exactly the ambiguity flagged 2026-09-03. Hidden until there
+  // are genuinely multiple nights for it to add up.
+  const weekRows = buildWeekRows();
+  const weekSavingCard = document.getElementById('weekSavingCard');
+  weekSavingCard.hidden = weekRows.length < 2;
+  if (!weekSavingCard.hidden) {
+    const week = weekSavingGbp().toFixed(2);
+    document.getElementById('weekSaving').textContent =
+      `NightDial could save you about £${week} this week. That's compared with a heater left on max each night.`;
+  }
+
+  setDial('', effectiveIndex, INDEX_COLORS[effectiveIndex]);
+  renderWeekList();
+}
+
+function toggleOverride() {
+  const todayStr = localDateStr(new Date());
+  const entry = history[todayStr];
+  if (!entry) return;
+  entry.overridden = !entry.overridden;
+  saveHistory(history);
+  renderTonightFromEntry(entry);
+}
+
+// =====================================================================
+// Self-tests -- same discipline as the demo prototype and, further back,
+// src/nudge_generator.py / src/thermal_forecast.py's own __main__ blocks:
+// deterministic assertions, fail loudly, printed pass/fail, run on demand
+// (NightDialSelfTest() from the console, or ?selftest=1 in the URL) --
+// never automatically for a real tenant. Deliberately covers pure
+// functions only: geocodePostcode/fetchForecastDays need a real network
+// call this build session's own tool sandboxes can't make (confirmed
+// blocked, see the comment above them), so they're excluded here and
+// need a real-device test instead, not a fake network mock standing in
+// for one.
+// =====================================================================
+function assertTrue(cond, msg) {
+  if (!cond) throw new Error('NightDial self-test FAILED: ' + msg);
+}
+
+function runSelfTests() {
+  const results = [];
+  function check(name, fn) {
+    try {
+      fn();
+      results.push({ name, pass: true });
+      console.log(`  [PASS] ${name}`);
+    } catch (e) {
+      results.push({ name, pass: false, error: e.message });
+      console.error(`  [FAIL] ${name}: ${e.message}`);
+    }
+  }
+
+  console.log('=== NightDial app self-tests (pure logic only -- see comment above runSelfTests) ===');
+
+  check('windChillTempC matches a hand-computed check (T=-5C, V=30km/h)', () => {
+    const v16 = Math.pow(30, 0.16);
+    const expected = 13.12 + 0.6215 * (-5) - 11.37 * v16 + 0.3965 * (-5) * v16;
+    const got = windChillTempC(-5, 30);
+    assertTrue(Math.abs(got - expected) < 1e-9, `${got} !== ${expected}`);
+    assertTrue(got > -13.5 && got < -12.5, `sanity check failed: expected roughly -13.0C, got ${got.toFixed(2)}`);
+  });
+
+  check('windChillTempC does not adjust outside its validated range', () => {
+    assertTrue(windChillTempC(15.0, 40) === 15.0, 'should not adjust when temp > 10C');
+    assertTrue(windChillTempC(-2.0, 2.0) === -2.0, 'should not adjust when wind < 4.8 km/h');
+  });
+
+  check('heatLossProxy matches Phase 1\'s plain formula when wind chill does not apply', () => {
+    const hlCalm = heatLossProxy(5.0, 0.0);
+    assertTrue(Math.abs(hlCalm - (BASE_TEMP_C - 5.0)) < 1e-9, `expected ${BASE_TEMP_C - 5.0}, got ${hlCalm}`);
+  });
+
+  check('heatLossProxy increases with wind chill on a cold, windy day', () => {
+    const hlCalm = heatLossProxy(5.0, 0.0);
+    const hlWindy = heatLossProxy(5.0, 40.0);
+    assertTrue(hlWindy > hlCalm, `windy (${hlWindy}) should exceed calm (${hlCalm})`);
+  });
+
+  check('heatLossProxy floors at 0 on a mild day regardless of wind', () => {
+    assertTrue(heatLossProxy(20.0, 50.0) === 0.0, 'mild day should floor at 0');
+  });
+
+  check('heatLossProxyToIndex is monotonic and stays within 1-6 across a wide range', () => {
+    const testProxies = [-5, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 25];
+    let prev = 0;
+    testProxies.forEach(p => {
+      const idx = heatLossProxyToIndex(p);
+      assertTrue(idx >= 1 && idx <= 6, `proxy ${p} -> index ${idx}, outside 1-6`);
+      assertTrue(idx >= prev, `not monotonic: proxy ${p} -> index ${idx}, previous was ${prev}`);
+      prev = idx;
+    });
+  });
+
+  check('OFF_SEASON_INDEX_THRESHOLD only fires at the mildest index, not shoulder-season index 2 (2026-09-03: live-test observation)', () => {
+    assertTrue(OFF_SEASON_INDEX_THRESHOLD === 1, `expected 1, got ${OFF_SEASON_INDEX_THRESHOLD}`);
+  });
+
+  check('heatLossProxyToIndex matches the real calibration pipeline output exactly at each band boundary (2026-09-03: LCL_2013.csv pipeline run)', () => {
+    // Just below / at / just above each real boundary should land on the
+    // expected side of it -- pins the actual quantile-derived edges, not
+    // the old evenly-spaced placeholder's round numbers.
+    const cases = [
+      [0.0, 1], [0.69, 1], [0.70, 1], [0.71, 2],
+      [2.24, 2], [2.26, 3],
+      [6.44, 3], [6.45, 4],
+      [11.81, 4], [11.82, 5],
+      [16.17, 5], [16.18, 6],
+      [22.2, 6],
+    ];
+    cases.forEach(([proxy, expected]) => {
+      const got = heatLossProxyToIndex(proxy);
+      assertTrue(got === expected, `heatLossProxy=${proxy} -> expected Index ${expected}, got ${got}`);
+    });
+  });
+
+  check('SAVING_FRACTION_BY_INDEX is the real calibrated ramp, uneven and monotonically decreasing (2026-09-03), index 6 tautologically zero', () => {
+    const fracs = [1, 2, 3, 4, 5, 6].map(i => SAVING_FRACTION_BY_INDEX[i]);
+    for (let i = 0; i < fracs.length - 1; i++) {
+      assertTrue(fracs[i] > fracs[i + 1], `not strictly decreasing at index ${i + 1}: ${fracs[i]} -> ${fracs[i + 1]}`);
+    }
+    assertTrue(SAVING_FRACTION_BY_INDEX[6] === 0, 'index 6 should be exactly 0 by construction');
+    // real ramp is NOT evenly spaced (the old placeholder was exactly 0.17
+    // apart at every step) -- confirms this is genuinely calibrated data
+    const gaps = [];
+    for (let i = 1; i < 6; i++) gaps.push(+(fracs[i - 1] - fracs[i]).toFixed(4));
+    const allEqual = gaps.every(g => g === gaps[0]);
+    assertTrue(!allEqual, `expected uneven real-data gaps, got evenly-spaced-looking gaps: ${gaps}`);
+  });
+
+  check('tonightSavingGbp is deterministic and £0 at index 6', () => {
+    assertTrue(tonightSavingGbp(3, 'e7') === tonightSavingGbp(3, 'e7'), 'not deterministic');
+    assertTrue(tonightSavingGbp(6, 'e7') === 0, `expected 0, got ${tonightSavingGbp(6, 'e7')}`);
+  });
+
+  check('tonightSavingGbp costs Economy 7 tenants less than standard-rate tenants at the same index (2026-09-03: real rates wired in)', () => {
+    const e7 = tonightSavingGbp(3, 'e7');
+    const standard = tonightSavingGbp(3, 'other');
+    assertTrue(e7 > 0 && standard > 0, `expected both positive, got e7=${e7} standard=${standard}`);
+    assertTrue(e7 < standard, `expected E7 (${e7}) cheaper than standard rate (${standard})`);
+    assertTrue(tonightSavingGbp(3, 'unsure') === standard, `'unsure' should fail-safe to the standard (non-discounted) rate, got ${tonightSavingGbp(3, 'unsure')} vs ${standard}`);
+  });
+
+  check('fullNightCostGbp matches the documented 3.4kW x 7h x real-rate calculation exactly', () => {
+    const expectedE7 = 23.8 * 0.1873;
+    const got = fullNightCostGbp('e7');
+    assertTrue(Math.abs(got - expectedE7) < 1e-9, `expected ${expectedE7}, got ${got}`);
+  });
+
+  check('UK_POSTCODE_SHAPE recognises real postcode formats and rejects a typed town name (2026-09-03: the SK23 7NX live-test bug)', () => {
+    const realPostcodes = ['SK237NX', 'SW1A1AA', 'M11AE', 'EC1A1BB'];
+    realPostcodes.forEach(pc => {
+      assertTrue(UK_POSTCODE_SHAPE.test(pc), `expected "${pc}" to match as a postcode shape`);
+    });
+    const notPostcodes = ['LONDON', 'MANCHESTER', ''];
+    notPostcodes.forEach(v => {
+      assertTrue(!UK_POSTCODE_SHAPE.test(v), `expected "${v}" NOT to match as a postcode shape`);
+    });
+  });
+
+  check('overriddenIndex bumps by one and caps at 6', () => {
+    assertTrue(overriddenIndex(3) === 4, `got ${overriddenIndex(3)}`);
+    assertTrue(overriddenIndex(6) === 6, `got ${overriddenIndex(6)}, expected capped at 6`);
+  });
+
+  check('localDateStr formats with zero-padding', () => {
+    const d = new Date(2026, 0, 5); // 5 Jan 2026, local time
+    assertTrue(localDateStr(d) === '2026-01-05', `got ${localDateStr(d)}`);
+  });
+
+  check('pruneHistory drops the oldest entries first and caps at the limit', () => {
+    const h = {};
+    for (let i = 1; i <= 5; i++) h[`2026-01-0${i}`] = { forecastIndex: 3, overridden: false };
+    pruneHistory(h, 3);
+    const keys = Object.keys(h).sort();
+    assertTrue(keys.length === 3, `expected 3 entries, got ${keys.length}`);
+    assertTrue(keys[0] === '2026-01-03', `expected oldest kept to be 01-03, got ${keys[0]}`);
+  });
+
+  check('buildWeekRows / weekSavingGbp stay consistent with each other, overrides included (regression coverage for the demo\'s 2026-09-02 divergence bug)', () => {
+    const savedHistory = history;
+    history = {
+      '2026-01-01': { forecastIndex: 4, overridden: false },
+      '2026-01-02': { forecastIndex: 3, overridden: true }, // overridden -> effective index 4
+    };
+    try {
+      const rows = buildWeekRows();
+      const rowTotal = rows.reduce((sum, r) => sum + r.saving, 0);
+      const weekTotal = weekSavingGbp();
+      assertTrue(Math.abs(rowTotal - weekTotal) < 1e-9, `row total ${rowTotal} !== weekSavingGbp ${weekTotal}`);
+      assertTrue(rows.length === 2, `expected 2 rows, got ${rows.length}`);
+    } finally {
+      history = savedHistory;
+    }
+  });
+
+  check('the week-total card\'s show/hide trigger (rows.length < 2) is right at the one-night boundary (2026-09-03: avoids a trivial single-night "week total" that just repeats tonight\'s own number)', () => {
+    const savedHistory = history;
+    try {
+      history = { '2026-01-01': { forecastIndex: 4, overridden: false } };
+      assertTrue(buildWeekRows().length < 2, 'one night recorded should still be hidden (trivial, same as tonight)');
+      history = {
+        '2026-01-01': { forecastIndex: 4, overridden: false },
+        '2026-01-02': { forecastIndex: 3, overridden: false },
+      };
+      assertTrue(!(buildWeekRows().length < 2), 'two nights recorded should show the card (a genuine sum)');
+    } finally {
+      history = savedHistory;
+    }
+  });
+
+  const failed = results.filter(r => !r.pass);
+  console.log(`=== ${results.length - failed.length}/${results.length} self-tests passed ===`);
+  if (failed.length) {
+    console.error(`${failed.length} test(s) failed -- see [FAIL] lines above. Not silently ignored.`);
+  }
+  return failed.length === 0;
+}
+window.NightDialSelfTest = runSelfTests;
+
+// =====================================================================
+// Init
+// =====================================================================
+buildTicks('');
+buildTicks('Out');
+setDial('Out', 2, 'var(--accent)'); // Output dial stays static/manual -- see the demo's own note on this
+
+const existingSettings = loadSettings();
+populateSettingsForm(existingSettings || {});
+if (existingSettings) {
+  showMainScreenView();
+} else {
+  showOnboarding(true);
+}
+
+document.getElementById('settingsSaveBtn').addEventListener('click', saveSettingsAndContinue);
+document.getElementById('skipLink').addEventListener('click', skipOnboarding);
+document.getElementById('resetDemoLink').addEventListener('click', resetMyData);
+document.getElementById('settingsBtn').addEventListener('click', () => showOnboarding(false));
+document.getElementById('overrideBtn').addEventListener('click', toggleOverride);
+document.getElementById('retryBtn').addEventListener('click', loadTonight);
+
+if (typeof location !== 'undefined' && location.search.includes('selftest')) {
+  runSelfTests();
+}
+</script>
+</body>
+</html>
